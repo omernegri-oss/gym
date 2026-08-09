@@ -56,7 +56,7 @@ body { font-family: Heebo, Arial, sans-serif; background: #161616; }
 .lang-toggle.corner:hover { background: rgba(215,255,43,0.25); }
 
 /* ============ APP (from פתיחת_אתר_2.html) ============ */
-.app { display: none; min-height: 100vh; background: #161616; color: #f2f2f2; }
+.app { display: none; height: 100vh; height: 100dvh; background: #161616; color: #f2f2f2; }
 .app.active { display: flex; }
 .sidebar { width: 180px; background: #1e1e1e; border-inline-start: 1px solid #333; padding: 20px 12px; display: flex; flex-direction: column; gap: 4px; }
 .brand { display: flex; align-items: center; gap: 8px; margin-bottom: 20px; padding: 8px; }
@@ -70,7 +70,7 @@ body { font-family: Heebo, Arial, sans-serif; background: #161616; }
 .sidebar-footer { display: flex; flex-direction: column; gap: 8px; }
 .btn-start { background: #d7ff2b; color: #141400; border: none; padding: 10px; border-radius: 8px; font-family: inherit; font-weight: 700; cursor: pointer; font-size: 12px; }
 .main { flex: 1; padding: 24px 32px; overflow-y: auto; }
-.topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+.topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; position: sticky; top: 0; background: #161616; z-index: 10; padding-top: 4px; margin-top: -4px; }
 .topbar h1 { font-size: 18px; }
 .topbar-icons { display: flex; gap: 12px; }
 .icon-btn { width: 32px; height: 32px; border-radius: 50%; background: #232323; border: none; color: #9c9c9c; cursor: pointer; }
@@ -125,8 +125,68 @@ body { font-family: Heebo, Arial, sans-serif; background: #161616; }
 .metric-label { font-size: 11px; color: #9c9c9c; }
 .metric-value { display: flex; align-items: center; margin-top: 4px; }
 .metric-input { background: #2a2a2a; border: 1px solid #333; color: #f2f2f2; padding: 8px; border-radius: 6px; font-family: inherit; font-size: 12px; width: 100%; }
-.save-toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(100px); background: #d7ff2b; color: #141400; padding: 12px 24px; border-radius: 20px; font-weight: 700; font-size: 13px; transition: transform 0.3s ease; z-index: 999; }
+.save-toast { position: fixed; bottom: calc(24px + env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%) translateY(100px); background: #d7ff2b; color: #141400; padding: 12px 24px; border-radius: 20px; font-weight: 700; font-size: 13px; transition: transform 0.3s ease; z-index: 140; max-width: calc(100vw - 32px); text-align: center; }
 .save-toast.show { transform: translateX(-50%) translateY(0); }
+
+/* ============ WORKOUT TIMER / TRAINING LOG ============ */
+.timer-display { font-size: 40px; font-weight: 800; letter-spacing: 1px; text-align: center; margin: 12px 0; font-variant-numeric: tabular-nums; }
+.log-entry { background: #1a1a1a; border: 1px solid #333; border-radius: 10px; padding: 12px; margin-bottom: 10px; display: flex; justify-content: space-between; gap: 10px; align-items: flex-start; }
+.log-entry-info { flex: 1; min-width: 0; }
+.log-entry-date { font-size: 10px; color: #6f6f6f; margin-bottom: 4px; }
+.log-entry-name { font-size: 13px; font-weight: 700; margin-bottom: 4px; }
+.log-entry-meta { font-size: 11px; color: #9c9c9c; }
+.log-entry-chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+.log-delete-btn { background: none; border: none; color: #6f6f6f; cursor: pointer; font-size: 16px; padding: 4px; line-height: 1; flex-shrink: 0; }
+.log-delete-btn:hover { color: #ff6b6b; }
+.log-empty { text-align: center; padding: 20px; color: #6f6f6f; font-size: 12px; }
+.exercise-check-list { display: flex; flex-direction: column; gap: 6px; max-height: 160px; overflow-y: auto; background: #1a1a1a; border-radius: 8px; padding: 8px; margin-top: 6px; }
+.exercise-check-list label { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #f2f2f2; cursor: pointer; }
+.exercise-check-empty { font-size: 11px; color: #6f6f6f; padding: 4px; }
+.ex-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+/* ============ EDITABLE STATS + DAY PICKER ============ */
+.stat-input { background: transparent; border: none; border-bottom: 1px dashed #333; color: #f2f2f2; font-family: inherit; font-size: 28px; font-weight: 700; width: 100%; padding: 0 0 2px; }
+.stat-input:focus { outline: none; border-bottom-color: #3fd7e8; }
+.stat-input::placeholder { color: #6f6f6f; }
+.day-picker { display: flex; gap: 4px; margin-top: 12px; }
+.day-btn { flex: 1; height: 40px; background: #2a2a2a; border: none; border-radius: 6px; color: #9c9c9c; font-family: inherit; font-weight: 700; font-size: 11px; cursor: pointer; transition: background 0.15s, color 0.15s; }
+.day-btn:hover { background: #333; }
+.day-btn.selected { background: #3fd7e8; color: #141400; }
+.day-btn.today { box-shadow: inset 0 0 0 2px #d7ff2b; }
+
+/* ============ MOBILE MENU (hamburger + off-canvas sidebar) ============ */
+.menu-toggle { display: none; background: #232323; border: 1px solid #333; color: #f2f2f2; width: 36px; height: 36px; min-width: 36px; border-radius: 8px; cursor: pointer; font-size: 16px; align-items: center; justify-content: center; flex-shrink: 0; }
+.menu-toggle:hover { background: #2a2a2a; }
+.topbar-left { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.sidebar-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 150; opacity: 0; pointer-events: none; transition: opacity 0.25s ease; }
+.sidebar-backdrop.show { opacity: 1; pointer-events: auto; }
+
+@media (max-width: 860px) {
+  .menu-toggle { display: flex; }
+  .sidebar {
+    position: fixed;
+    inset-block: 0;
+    inset-inline-start: -100%;
+    width: 260px;
+    max-width: 82vw;
+    height: 100dvh;
+    z-index: 200;
+    transition: inset-inline-start 0.28s ease;
+  }
+  .sidebar.open { inset-inline-start: 0; box-shadow: 0 0 32px rgba(0,0,0,0.55); }
+  .sidebar-backdrop { display: block; }
+  .main { padding: 16px; }
+  .grid-2, .grid-3 { grid-template-columns: 1fr; }
+  .form-row { grid-template-columns: 1fr; }
+  .meal-card { flex-wrap: wrap; }
+  .topbar h1 { font-size: 16px; }
+  .onboard-card { padding: 24px 20px; }
+}
+
+@media (max-width: 420px) {
+  .ex-grid { grid-template-columns: 1fr; }
+  .macro-cards { grid-template-columns: 1fr; }
+}
 </style>
 </head>
 <body>
@@ -229,7 +289,8 @@ body { font-family: Heebo, Arial, sans-serif; background: #161616; }
 <!-- SCREEN 2: MAIN APP (from פתיחת_אתר_2.html)                   -->
 <!-- ============================================================ -->
 <div class="app" id="mainApp">
-  <aside class="sidebar">
+  <div class="sidebar-backdrop" id="sidebarBackdrop" onclick="closeSidebar()"></div>
+  <aside class="sidebar" id="sidebar">
     <div class="brand">
       <div class="brand-icon">
         <svg viewBox="0 0 24 24" width="18" height="18" fill="none"><path d="M3 12L11 12M11 12L8 8M11 12L8 16M13 6H21M13 18H21" stroke="#141400" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -257,10 +318,13 @@ body { font-family: Heebo, Arial, sans-serif; background: #161616; }
     <!-- DASHBOARD SCREEN -->
     <div id="dashboard" class="screen active">
       <div class="topbar">
-        <h1 id="greetingText">שלום 👋</h1>
+        <div class="topbar-left">
+          <button class="menu-toggle" onclick="openSidebar()" aria-label="Menu">☰</button>
+          <h1 id="greetingText">שלום 👋</h1>
+        </div>
         <div class="topbar-icons">
-          <button class="icon-btn">🔔</button>
-          <button class="icon-btn">👤</button>
+          <button class="icon-btn" onclick="showNotificationsToast()">🔔</button>
+          <button class="icon-btn" onclick="showProfileToast()">👤</button>
         </div>
       </div>
 
@@ -282,7 +346,7 @@ body { font-family: Heebo, Arial, sans-serif; background: #161616; }
           <div class="hero-stat"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M13 2L3 14h7l-1 8 11-14h-8l1-6z"/></svg><div style="font-weight: 700;">4,250</div><div style="font-size: 10px;" data-i18n="heroCalLabel">קק״ל</div></div>
         </div>
         <div class="btn-group">
-          <button class="btn" data-i18n="editPlanBtn">ערוך תוכנית</button>
+          <button class="btn" onclick="switchScreen('program')" data-i18n="editPlanBtn">ערוך תוכנית</button>
           <button class="btn btn-accent" onclick="switchScreen('live')" data-i18n="startNowBtn">התחל עכשיו ▶</button>
         </div>
       </div>
@@ -305,78 +369,81 @@ body { font-family: Heebo, Arial, sans-serif; background: #161616; }
       <div class="grid-2" style="margin-bottom: 16px;">
         <div class="card">
           <div class="card-title" data-i18n="sleepTitle">שעות שינה</div>
-          <div><span class="stat-big">7.5</span><span class="stat-unit" data-i18n="sleepUnit">שעות</span></div>
-          <div class="bar-track"><div class="bar-fill" style="width: 82%;"></div></div>
+          <div style="display:flex; align-items:baseline; gap:6px;">
+            <input class="stat-input" type="number" step="0.5" min="0" max="24" id="sleepInput" onchange="updateSleepHours()" placeholder="0">
+            <span class="stat-unit" data-i18n="sleepUnit">שעות</span>
+          </div>
+          <div class="bar-track"><div class="bar-fill" id="sleepBar" style="width: 0%;"></div></div>
         </div>
         <div class="card">
           <div class="card-title" data-i18n="stepsTitle">צעדים</div>
-          <div><span class="stat-big">8,420</span></div>
-          <div class="bar-track"><div class="bar-fill" style="width: 64%;"></div></div>
+          <input class="stat-input" type="number" step="100" min="0" id="stepsInput" onchange="updateSteps()" placeholder="0">
+          <div class="bar-track"><div class="bar-fill" id="stepsBar" style="width: 0%;"></div></div>
         </div>
       </div>
 
       <div class="card">
         <div class="card-title" data-i18n="weeklyProgressTitle">התקדמות שבועית</div>
-        <div style="display: flex; align-items: flex-end; gap: 6px; height: 80px; margin-top: 12px;">
-          <div style="flex: 1; background: #2a2a2a; border-radius: 3px; height: 30%;"></div>
-          <div style="flex: 1; background: #2a2a2a; border-radius: 3px; height: 45%;"></div>
-          <div style="flex: 1; background: #2a2a2a; border-radius: 3px; height: 38%;"></div>
-          <div style="flex: 1; background: #2a2a2a; border-radius: 3px; height: 60%;"></div>
-          <div style="flex: 1; background: #d7ff2b; border-radius: 3px; height: 95%;"></div>
-          <div style="flex: 1; background: #2a2a2a; border-radius: 3px; height: 55%;"></div>
-          <div style="flex: 1; background: #2a2a2a; border-radius: 3px; height: 40%;"></div>
-        </div>
+        <div style="display: flex; align-items: flex-end; gap: 6px; height: 80px; margin-top: 12px;" id="weeklyChartTrack"></div>
       </div>
     </div>
 
     <!-- LIVE WORKOUT SCREEN -->
     <div id="live" class="screen">
       <div class="topbar">
-        <h1 data-i18n="liveTitle">אימון פעיל</h1>
+        <div class="topbar-left">
+          <button class="menu-toggle" onclick="openSidebar()" aria-label="Menu">☰</button>
+          <h1 data-i18n="liveTitle">אימון פעיל</h1>
+        </div>
         <div class="topbar-icons">
-          <button class="icon-btn">ℹ️</button>
-          <button class="icon-btn">🔔</button>
+          <button class="icon-btn" onclick="showInfoToast()">ℹ️</button>
+          <button class="icon-btn" onclick="showNotificationsToast()">🔔</button>
         </div>
       </div>
 
       <div class="grid-2">
         <div>
-          <div style="position: relative;">
-            <div class="camera-placeholder">
-              <div class="camera-live" data-i18n="liveTag">LIVE 🔴</div>
-              <span data-i18n="cameraOff">המצלמה כבויה</span>
+          <div class="card">
+            <div class="card-title" data-i18n="workoutTimerTitle">טיימר אימון</div>
+            <div class="timer-display" id="liveTimer">00:00:00</div>
+            <div id="liveWorkoutStatus" style="text-align:center; font-size:12px; color:#9c9c9c; margin-bottom:8px;" data-i18n="notStartedLabel">האימון טרם התחיל</div>
+            <div class="btn-group">
+              <button class="btn btn-accent" id="startWorkoutBtn" onclick="startWorkout()" style="flex:1;" data-i18n="startWorkoutCta">התחל אימון ▶</button>
+              <button class="btn" id="pauseWorkoutBtn" onclick="pauseWorkout()" style="display:none; flex:1;" data-i18n="pauseBtn">השהה ⏸</button>
+              <button class="btn" id="finishWorkoutBtn" onclick="finishWorkout()" style="display:none; flex:1; border-color:#d7ff2b; color:#d7ff2b;" data-i18n="finishWorkoutBtn">סיים ותעד ✓</button>
             </div>
           </div>
 
-          <div class="grid-3" style="margin-bottom: 16px;">
-            <div class="card" style="margin: 0;">
-              <div class="card-title" data-i18n="heartRateTitle">דופק</div>
-              <div style="font-size: 16px; font-weight: 700;">138 <span class="stat-unit">bpm</span></div>
+          <div class="add-form" id="workoutLogForm">
+            <div class="form-row">
+              <input class="form-input" id="logName" placeholder="שם האימון" data-i18n-placeholder="logNamePlaceholder">
+              <input class="form-input" id="logDuration" placeholder="משך (דקות)" type="number" min="1">
             </div>
-            <div class="card" style="margin: 0;">
-              <div class="card-title" data-i18n="caloriesTitle">קלוריות</div>
-              <div style="font-size: 16px; font-weight: 700;">342 <span class="stat-unit">kcal</span></div>
+            <div class="field" style="margin-bottom:8px;">
+              <label class="label" style="font-size:11px;" data-i18n="logExercisesLabel">תרגילים שבוצעו</label>
+              <div class="exercise-check-list" id="logExerciseChecklist"></div>
             </div>
-            <div class="card" style="margin: 0;">
-              <div class="card-title" data-i18n="timeTitle">זמן</div>
-              <div style="font-size: 16px; font-weight: 700;">00:42:15</div>
+            <div class="form-row">
+              <input class="form-input" id="logCalories" placeholder="קלוריות (אופציונלי)" type="number" data-i18n-placeholder="logCaloriesPlaceholder">
+              <input class="form-input" id="logNotes" placeholder="הערות (אופציונלי)" data-i18n-placeholder="logNotesPlaceholder">
+            </div>
+            <div class="form-actions">
+              <button class="form-save" onclick="saveTrainingLog()" data-i18n="logSaveBtn">שמור אימון ביומן</button>
+              <button class="form-cancel" onclick="cancelWorkoutLog()" data-i18n="cancelBtn">ביטול</button>
             </div>
           </div>
 
-          <button class="btn btn-accent" style="width: 100%; padding: 12px;" data-i18n="startCameraBtn">הפעל מצלמה + זהה ציוד</button>
+          <div class="camera-placeholder" style="margin-top:16px;">
+            <span data-i18n="cameraOff">המצלמה כבויה</span>
+          </div>
         </div>
 
         <div class="card">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-            <div class="card-title" style="margin: 0;" data-i18n="detectionsTitle">הזיהויים באימון</div>
-            <span style="font-size: 11px; background: #2a2a2a; padding: 3px 8px; border-radius: 12px;" id="detectionCount" data-i18n="detectionCountDefault">0 מכשירים</span>
+            <div class="card-title" style="margin: 0;" data-i18n="trainingLogTitle">יומן אימונים</div>
+            <span style="font-size: 11px; background: #2a2a2a; padding: 3px 8px; border-radius: 12px;" id="logCount">0</span>
           </div>
-          <div style="text-align: center; padding: 24px; color: #6f6f6f; font-size: 12px;" id="detectionEmpty" data-i18n="detectionEmpty">
-            טרם זוהה ציוד
-          </div>
-          <div style="border-top: 1px solid #333; padding-top: 12px; font-size: 12px; color: #9c9c9c;" data-i18n="detectionHint">
-            + צלם מכשיר נוסף כדי להוסיף
-          </div>
+          <div id="trainingLogList"></div>
         </div>
       </div>
     </div>
@@ -384,9 +451,12 @@ body { font-family: Heebo, Arial, sans-serif; background: #161616; }
     <!-- PROGRAM SCREEN -->
     <div id="program" class="screen">
       <div class="topbar">
-        <h1 data-i18n="programTitle">מעקב ביצועים שבועי</h1>
+        <div class="topbar-left">
+          <button class="menu-toggle" onclick="openSidebar()" aria-label="Menu">☰</button>
+          <h1 data-i18n="programTitle">מעקב ביצועים שבועי</h1>
+        </div>
         <div class="topbar-icons">
-          <button class="icon-btn">🔍</button>
+          <button class="icon-btn" onclick="showSearchToast()">🔍</button>
         </div>
       </div>
 
@@ -394,39 +464,15 @@ body { font-family: Heebo, Arial, sans-serif; background: #161616; }
         <div>
           <div class="card">
             <div class="card-title" data-i18n="weeklyPlanTitle">תוכנית שבועית</div>
-            <div style="display: flex; gap: 4px; margin-top: 12px;">
-              <div style="flex: 1; height: 40px; background: #2a2a2a; border-radius: 6px;"></div>
-              <div style="flex: 1; height: 40px; background: #3fd7e8; border-radius: 6px;"></div>
-              <div style="flex: 1; height: 40px; background: #2a2a2a; border-radius: 6px;"></div>
-              <div style="flex: 1; height: 40px; background: #2a2a2a; border-radius: 6px;"></div>
-              <div style="flex: 1; height: 40px; background: #3fd7e8; border-radius: 6px;"></div>
-              <div style="flex: 1; height: 40px; background: #d7ff2b; border-radius: 6px;"></div>
-              <div style="flex: 1; height: 40px; background: #3fd7e8; border-radius: 6px;"></div>
-            </div>
+            <div style="font-size: 11px; color: #6f6f6f; margin-top: -4px; margin-bottom: 8px;" data-i18n="weeklyPlanHint">לחצו על יום כדי לסמן אותו כיום אימון</div>
+            <div class="day-picker" id="dayPicker"></div>
           </div>
 
           <div class="card">
             <div style="display: flex; justify-content: space-between; margin-bottom: 12px;">
               <div class="card-title" style="margin: 0;" data-i18n="exercisesTitle">תרגילים</div>
             </div>
-            <div id="exercisesGrid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-              <div class="ex-card">
-                <div class="ex-thumb"></div>
-                <div class="ex-body">
-                  <div class="ex-name">לחיצת חזה</div>
-                  <div class="ex-meta">3 סטים · 10</div>
-                  <div class="ex-tags"><span class="tag">חזה</span></div>
-                </div>
-              </div>
-              <div class="ex-card">
-                <div class="ex-thumb"></div>
-                <div class="ex-body">
-                  <div class="ex-name">משיכת חבל</div>
-                  <div class="ex-meta">4 סטים · 12</div>
-                  <div class="ex-tags"><span class="tag">גב</span></div>
-                </div>
-              </div>
-            </div>
+            <div id="exercisesGrid" class="ex-grid"></div>
 
             <div class="add-form" id="exerciseForm">
               <div class="form-row">
@@ -469,41 +515,18 @@ body { font-family: Heebo, Arial, sans-serif; background: #161616; }
     <!-- NUTRITION SCREEN -->
     <div id="nutrition" class="screen">
       <div class="topbar">
-        <h1 data-i18n="navNutrition">תזונה ומדדים</h1>
+        <div class="topbar-left">
+          <button class="menu-toggle" onclick="openSidebar()" aria-label="Menu">☰</button>
+          <h1 data-i18n="navNutrition">תזונה ומדדים</h1>
+        </div>
         <div class="topbar-icons">
-          <button class="icon-btn">🔍</button>
+          <button class="icon-btn" onclick="showSearchToast()">🔍</button>
         </div>
       </div>
 
       <div class="grid-2">
         <div>
-          <div id="mealsList">
-            <div class="meal-card">
-              <div class="meal-cal">
-                <div class="meal-cal-num">450</div>
-                <div class="meal-cal-label">קק״ל</div>
-              </div>
-              <div class="meal-info">
-                <span class="meal-tag">ארוחת בוקר</span>
-                <div class="meal-name">אבוקדו וביצים</div>
-                <div class="meal-meta">🔥 25ג׳ | 🌾 32ג׳</div>
-              </div>
-              <div class="meal-thumb"></div>
-            </div>
-
-            <div class="meal-card">
-              <div class="meal-cal">
-                <div class="meal-cal-num">620</div>
-                <div class="meal-cal-label">קק״ל</div>
-              </div>
-              <div class="meal-info">
-                <span class="meal-tag">ארוחת צהריים</span>
-                <div class="meal-name">חזה עוף וקינואה</div>
-                <div class="meal-meta">🔥 48ג׳ | 🌾 45ג׳</div>
-              </div>
-              <div class="meal-thumb"></div>
-            </div>
-          </div>
+          <div id="mealsList"></div>
 
           <div class="add-form" id="mealForm">
             <div class="form-row">
@@ -580,14 +603,11 @@ body { font-family: Heebo, Arial, sans-serif; background: #161616; }
    ================================================================ */
 let user = null;
 let metrics = null;
-let meals = [
-  { nameKey: 'seedMealBreakfast', tag: 'breakfast', cal: 450, protein: 25, carbs: 32 },
-  { nameKey: 'seedMealLunch', tag: 'lunch', cal: 620, protein: 48, carbs: 45 }
-];
-let exercises = [
-  { nameKey: 'seedExercisePress', tagKey: 'seedMuscleChest', sets: 3, reps: 10 },
-  { nameKey: 'seedExercisePull', tagKey: 'seedMuscleBack', sets: 4, reps: 12 }
-];
+let meals = [];
+let exercises = [];
+let trainingLog = [];
+let dailyStats = { sleep: 0, steps: 0 };
+let trainingDays = [false, false, false, false, false, false, false]; // index = JS Date.getDay(), 0=Sunday
 
 /* ================================================================
    STORAGE HELPERS (persists between visits, via localStorage)
@@ -633,11 +653,16 @@ const translations = {
     editPlanBtn: 'ערוך תוכנית', startNowBtn: 'התחל עכשיו ▶',
     nutritionGoalTitle: '🎯 היעד התזונתי שלך היום',
     sleepTitle: 'שעות שינה', sleepUnit: 'שעות', stepsTitle: 'צעדים', weeklyProgressTitle: 'התקדמות שבועית',
-    liveTitle: 'אימון פעיל', cameraOff: 'המצלמה כבויה', liveTag: 'LIVE 🔴',
-    heartRateTitle: 'דופק', caloriesTitle: 'קלוריות', timeTitle: 'זמן',
-    startCameraBtn: 'הפעל מצלמה + זהה ציוד', detectionsTitle: 'הזיהויים באימון', detectionCountDefault: '0 מכשירים',
-    detectionEmpty: 'טרם זוהה ציוד', detectionHint: '+ צלם מכשיר נוסף כדי להוסיף',
-    programTitle: 'מעקב ביצועים שבועי', weeklyPlanTitle: 'תוכנית שבועית', exercisesTitle: 'תרגילים',
+    liveTitle: 'אימון פעיל', cameraOff: 'המצלמה כבויה',
+    workoutTimerTitle: 'טיימר אימון', notStartedLabel: 'האימון טרם התחיל', inProgressLabel: 'האימון בעיצומו…', pausedLabel: 'האימון מושהה',
+    startWorkoutCta: 'התחל אימון ▶', resumeBtn: 'המשך ▶', pauseBtn: 'השהה ⏸', finishWorkoutBtn: 'סיים ותעד ✓',
+    logNamePlaceholder: 'שם האימון (לדוגמה: רגליים)', logExercisesLabel: 'תרגילים שבוצעו', noExercisesYet: 'עדיין לא הוספת תרגילים בתוכנית האימונים',
+    logCaloriesPlaceholder: 'קלוריות (אופציונלי)', logNotesPlaceholder: 'הערות (אופציונלי)', logSaveBtn: 'שמור אימון ביומן',
+    logNameDefault: 'אימון', trainingLogTitle: 'יומן אימונים', logEmptyState: 'עדיין לא תיעדת אימונים. סיים אימון כדי להוסיף רשומה ראשונה!',
+    logSavedToast: 'האימון נשמר ביומן!', minUnit: 'דק׳',
+    notificationsToast: 'אין התראות חדשות', searchComingSoon: 'החיפוש יגיע בקרוב',
+    liveInfoToast: 'לחצו "התחל אימון" כדי לעקוב אחרי הזמן ולתעד אותו ביומן האימונים',
+    programTitle: 'מעקב ביצועים שבועי', weeklyPlanTitle: 'תוכנית שבועית', weeklyPlanHint: 'לחצו על יום כדי לסמן אותו כיום אימון', exercisesTitle: 'תרגילים',
     exNamePlaceholder: 'שם התרגיל', exTagPlaceholder: 'קבוצת שריר', exSetsPlaceholder: 'סטים', exRepsPlaceholder: 'חזרות',
     saveExerciseBtn: 'שמור תרגיל', cancelBtn: 'ביטול', addExerciseBtn: '＋ הוסף תרגיל', setsUnit: 'סטים', generalTag: 'כללי',
     metricsTitle: 'מדדים אישיים', metricAgeLabel: 'גיל', metricHeightLabel: 'גובה (ס״מ)', metricWeightLabel: 'משקל (ק״ג)',
@@ -653,9 +678,8 @@ const translations = {
     metricsUpdatedToast: 'המדדים עודכנו ויעדים חושבו מחדש',
     langToggle: 'EN',
     monthNames: ['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'],
-    seedMealBreakfast: 'אבוקדו וביצים', seedMealLunch: 'חזה עוף וקינואה',
-    seedExercisePress: 'לחיצת חזה', seedExercisePull: 'משיכת חבל',
-    seedMuscleChest: 'חזה', seedMuscleBack: 'גב',
+    dayNamesShort: ['א׳','ב׳','ג׳','ד׳','ה׳','ו׳','ש׳'],
+    mealsEmptyState: 'עדיין לא הוספת ארוחות היום', exercisesEmptyState: 'עדיין לא הוספת תרגילים לתוכנית',
     greeting: (name) => `שלום, ${name} 👋`,
     welcomeToast: (name) => `ברוכים הבאים, ${name}!`
   },
@@ -682,11 +706,16 @@ const translations = {
     editPlanBtn: 'Edit plan', startNowBtn: 'Start Now ▶',
     nutritionGoalTitle: "🎯 Today's Nutrition Goal",
     sleepTitle: 'Sleep', sleepUnit: 'hrs', stepsTitle: 'Steps', weeklyProgressTitle: 'Weekly Progress',
-    liveTitle: 'Active Workout', cameraOff: 'Camera is off', liveTag: 'LIVE 🔴',
-    heartRateTitle: 'Heart Rate', caloriesTitle: 'Calories', timeTitle: 'Time',
-    startCameraBtn: 'Start camera + detect equipment', detectionsTitle: 'Detections this workout', detectionCountDefault: '0 devices',
-    detectionEmpty: 'No equipment detected yet', detectionHint: '+ Scan another device to add it',
-    programTitle: 'Weekly Performance Tracking', weeklyPlanTitle: 'Weekly Plan', exercisesTitle: 'Exercises',
+    liveTitle: 'Active Workout', cameraOff: 'Camera is off',
+    workoutTimerTitle: 'Workout Timer', notStartedLabel: 'Workout not started', inProgressLabel: 'Workout in progress…', pausedLabel: 'Workout paused',
+    startWorkoutCta: 'Start Workout ▶', resumeBtn: 'Resume ▶', pauseBtn: 'Pause ⏸', finishWorkoutBtn: 'Finish & Log ✓',
+    logNamePlaceholder: 'Workout name (e.g. Leg Day)', logExercisesLabel: 'Exercises performed', noExercisesYet: "You haven't added exercises to your program yet",
+    logCaloriesPlaceholder: 'Calories (optional)', logNotesPlaceholder: 'Notes (optional)', logSaveBtn: 'Save to training log',
+    logNameDefault: 'Workout', trainingLogTitle: 'Training Log', logEmptyState: 'No workouts logged yet. Finish a workout to add your first entry!',
+    logSavedToast: 'Workout saved to your training log!', minUnit: 'min',
+    notificationsToast: 'No new notifications', searchComingSoon: 'Search coming soon',
+    liveInfoToast: 'Tap "Start Workout" to track the time and log it in your training log',
+    programTitle: 'Weekly Performance Tracking', weeklyPlanTitle: 'Weekly Plan', weeklyPlanHint: 'Tap a day to mark it as a training day', exercisesTitle: 'Exercises',
     exNamePlaceholder: 'Exercise name', exTagPlaceholder: 'Muscle group', exSetsPlaceholder: 'Sets', exRepsPlaceholder: 'Reps',
     saveExerciseBtn: 'Save exercise', cancelBtn: 'Cancel', addExerciseBtn: '＋ Add exercise', setsUnit: 'sets', generalTag: 'General',
     metricsTitle: 'Personal Metrics', metricAgeLabel: 'Age', metricHeightLabel: 'Height (cm)', metricWeightLabel: 'Weight (kg)',
@@ -702,9 +731,8 @@ const translations = {
     metricsUpdatedToast: 'Metrics updated and goals recalculated',
     langToggle: 'עב',
     monthNames: ['January','February','March','April','May','June','July','August','September','October','November','December'],
-    seedMealBreakfast: 'Avocado & Eggs', seedMealLunch: 'Chicken Breast & Quinoa',
-    seedExercisePress: 'Bench Press', seedExercisePull: 'Cable Row',
-    seedMuscleChest: 'Chest', seedMuscleBack: 'Back',
+    dayNamesShort: ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'],
+    mealsEmptyState: "You haven't added any meals yet today", exercisesEmptyState: "You haven't added exercises to your program yet",
     greeting: (name) => `Hi, ${name} 👋`,
     welcomeToast: (name) => `Welcome, ${name}!`
   }
@@ -749,12 +777,40 @@ function applyLanguage(lang){
   }
   renderMeals();
   renderExercises();
+  renderTrainingLog();
+  renderWeeklyChart();
+  updateWorkoutButtons();
+  renderDayPicker();
+  if(document.getElementById('workoutLogForm').classList.contains('show')) renderExerciseChecklist();
   document.getElementById('greetingText').textContent = user ? translations[currentLang].greeting(user.name) : t('greetingDefault');
+  const heroMonthEl = document.getElementById('heroMonth');
+  if(heroMonthEl && user) heroMonthEl.textContent = t('monthNames')[new Date().getMonth()];
 }
 
 function toggleLanguage(){
   applyLanguage(currentLang === 'he' ? 'en' : 'he');
 }
+
+/* ================================================================
+   MOBILE SIDEBAR (hamburger menu open/close)
+   ================================================================ */
+function openSidebar(){
+  document.getElementById('sidebar').classList.add('open');
+  document.getElementById('sidebarBackdrop').classList.add('show');
+}
+function closeSidebar(){
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sidebarBackdrop').classList.remove('show');
+}
+document.addEventListener('keydown', (e) => { if(e.key === 'Escape') closeSidebar(); });
+
+/* ================================================================
+   PLACEHOLDER TOPBAR ICON ACTIONS (so nothing is a dead click)
+   ================================================================ */
+function showNotificationsToast(){ flashToast(t('notificationsToast')); }
+function showSearchToast(){ flashToast(t('searchComingSoon')); }
+function showInfoToast(){ flashToast(t('liveInfoToast')); }
+function showProfileToast(){ if(user) flashToast(user.name + ' · ' + goalLabel(user.goal)); }
 
 /* ================================================================
    MACRO CALCULATIONS (Harris-Benedict + goal-based)
@@ -879,6 +935,9 @@ async function handleSubmit(e) {
   await saveKey('metrics', metrics);
   await saveKey('meals', meals);
   await saveKey('exercises', exercises);
+  await saveKey('trainingLog', trainingLog);
+  await saveKey('dailyStats', dailyStats);
+  await saveKey('trainingDays', trainingDays);
 
   enterApp();
 }
@@ -902,6 +961,11 @@ function enterApp(){
   renderMeals();
   renderExercises();
   renderMetricsForm();
+  renderTrainingLog();
+  renderWeeklyChart();
+  updateWorkoutButtons();
+  renderDailyStats();
+  renderDayPicker();
 
   switchScreen('dashboard');
   flashToast(translations[currentLang].welcomeToast(user.name));
@@ -911,6 +975,7 @@ function enterApp(){
    NAVIGATION
    ================================================================ */
 function switchScreen(name, btn) {
+  closeSidebar();
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById(name).classList.add('active');
 
@@ -937,6 +1002,229 @@ function renderDashboardGoal(){
 
   const eaten = meals.reduce((s,m)=>s+Number(m.cal||0),0);
   document.getElementById('dashCalBar').style.width = Math.min(100, (eaten/g.calories)*100) + '%';
+}
+
+/* ================================================================
+   DASHBOARD — sleep hours & steps (user-entered, no device data)
+   ================================================================ */
+const SLEEP_GOAL_HOURS = 8;
+const STEPS_GOAL = 10000;
+
+function renderDailyStats(){
+  const sleepInput = document.getElementById('sleepInput');
+  const stepsInput = document.getElementById('stepsInput');
+  if(!sleepInput) return;
+  sleepInput.value = dailyStats.sleep || '';
+  stepsInput.value = dailyStats.steps || '';
+  document.getElementById('sleepBar').style.width = Math.min(100, (dailyStats.sleep / SLEEP_GOAL_HOURS) * 100) + '%';
+  document.getElementById('stepsBar').style.width = Math.min(100, (dailyStats.steps / STEPS_GOAL) * 100) + '%';
+}
+
+async function updateSleepHours(){
+  dailyStats.sleep = Math.max(0, Number(document.getElementById('sleepInput').value) || 0);
+  await saveKey('dailyStats', dailyStats);
+  renderDailyStats();
+}
+
+async function updateSteps(){
+  dailyStats.steps = Math.max(0, Number(document.getElementById('stepsInput').value) || 0);
+  await saveKey('dailyStats', dailyStats);
+  renderDailyStats();
+}
+
+/* ================================================================
+   PROGRAM — which days of the week the user trains (user-defined)
+   ================================================================ */
+function renderDayPicker(){
+  const c = document.getElementById('dayPicker');
+  if(!c) return;
+  const today = new Date().getDay();
+  const names = t('dayNamesShort');
+  c.innerHTML = names.map((n, i) => `
+    <button class="day-btn ${trainingDays[i] ? 'selected' : ''} ${i === today ? 'today' : ''}" onclick="toggleTrainingDay(${i})">${n}</button>
+  `).join('');
+}
+
+async function toggleTrainingDay(i){
+  trainingDays[i] = !trainingDays[i];
+  await saveKey('trainingDays', trainingDays);
+  renderDayPicker();
+}
+
+/* ================================================================
+   LIVE WORKOUT — timer + training log
+   ================================================================ */
+let workoutState = 'idle'; // idle | running | paused
+let workoutSeconds = 0;
+let workoutTimerHandle = null;
+
+function formatTimer(sec){
+  const h = String(Math.floor(sec/3600)).padStart(2,'0');
+  const m = String(Math.floor((sec%3600)/60)).padStart(2,'0');
+  const s = String(sec%60).padStart(2,'0');
+  return `${h}:${m}:${s}`;
+}
+
+function tickWorkout(){
+  workoutSeconds++;
+  const el = document.getElementById('liveTimer');
+  if(el) el.textContent = formatTimer(workoutSeconds);
+}
+
+function startWorkout(){
+  workoutState = 'running';
+  clearInterval(workoutTimerHandle);
+  workoutTimerHandle = setInterval(tickWorkout, 1000);
+  updateWorkoutButtons();
+}
+
+function pauseWorkout(){
+  workoutState = 'paused';
+  clearInterval(workoutTimerHandle);
+  updateWorkoutButtons();
+}
+
+function updateWorkoutButtons(){
+  const startBtn = document.getElementById('startWorkoutBtn');
+  const pauseBtn = document.getElementById('pauseWorkoutBtn');
+  const finishBtn = document.getElementById('finishWorkoutBtn');
+  const statusEl = document.getElementById('liveWorkoutStatus');
+  if(!startBtn) return;
+  if(workoutState === 'idle'){
+    startBtn.style.display = '';
+    startBtn.textContent = t('startWorkoutCta');
+    pauseBtn.style.display = 'none';
+    finishBtn.style.display = 'none';
+    statusEl.textContent = t('notStartedLabel');
+  } else if(workoutState === 'running'){
+    startBtn.style.display = 'none';
+    pauseBtn.style.display = '';
+    pauseBtn.textContent = t('pauseBtn');
+    finishBtn.style.display = '';
+    finishBtn.textContent = t('finishWorkoutBtn');
+    statusEl.textContent = t('inProgressLabel');
+  } else if(workoutState === 'paused'){
+    startBtn.style.display = '';
+    startBtn.textContent = t('resumeBtn');
+    pauseBtn.style.display = 'none';
+    finishBtn.style.display = '';
+    finishBtn.textContent = t('finishWorkoutBtn');
+    statusEl.textContent = t('pausedLabel');
+  }
+}
+
+function renderExerciseChecklist(){
+  const c = document.getElementById('logExerciseChecklist');
+  if(!c) return;
+  if(exercises.length === 0){
+    c.innerHTML = `<div class="exercise-check-empty">${t('noExercisesYet')}</div>`;
+    return;
+  }
+  c.innerHTML = exercises.map((ex, i) => `
+    <label><input type="checkbox" class="log-ex-check" value="${i}"> ${displayExerciseName(ex)}</label>
+  `).join('');
+}
+
+function finishWorkout(){
+  clearInterval(workoutTimerHandle);
+  document.getElementById('logName').value = '';
+  document.getElementById('logDuration').value = Math.max(1, Math.round(workoutSeconds/60));
+  document.getElementById('logCalories').value = '';
+  document.getElementById('logNotes').value = '';
+  renderExerciseChecklist();
+  const form = document.getElementById('workoutLogForm');
+  form.classList.add('show');
+  form.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function cancelWorkoutLog(){
+  document.getElementById('workoutLogForm').classList.remove('show');
+}
+
+async function saveTrainingLog(){
+  const name = document.getElementById('logName').value.trim() || t('logNameDefault');
+  const duration = Number(document.getElementById('logDuration').value) || Math.max(1, Math.round(workoutSeconds/60));
+  const calories = Number(document.getElementById('logCalories').value) || 0;
+  const notes = document.getElementById('logNotes').value.trim();
+  const exerciseNames = Array.from(document.querySelectorAll('.log-ex-check:checked'))
+    .map(cb => exercises[Number(cb.value)])
+    .filter(Boolean)
+    .map(ex => displayExerciseName(ex));
+
+  trainingLog.unshift({
+    id: Date.now(),
+    dateISO: new Date().toISOString(),
+    name, durationMin: duration, calories, notes, exerciseNames
+  });
+  await saveKey('trainingLog', trainingLog);
+
+  clearInterval(workoutTimerHandle);
+  workoutState = 'idle';
+  workoutSeconds = 0;
+  document.getElementById('liveTimer').textContent = formatTimer(0);
+  updateWorkoutButtons();
+  document.getElementById('workoutLogForm').classList.remove('show');
+
+  renderTrainingLog();
+  renderWeeklyChart();
+  flashToast(t('logSavedToast'));
+}
+
+async function deleteTrainingLog(id){
+  trainingLog = trainingLog.filter(e => e.id !== id);
+  await saveKey('trainingLog', trainingLog);
+  renderTrainingLog();
+  renderWeeklyChart();
+}
+
+function formatLogDate(iso){
+  const d = new Date(iso);
+  return d.toLocaleDateString(currentLang === 'he' ? 'he-IL' : 'en-US', { day: '2-digit', month: 'short' });
+}
+
+function renderTrainingLog(){
+  const list = document.getElementById('trainingLogList');
+  const countEl = document.getElementById('logCount');
+  if(!list) return;
+  countEl.textContent = trainingLog.length;
+  if(trainingLog.length === 0){
+    list.innerHTML = `<div class="log-empty">${t('logEmptyState')}</div>`;
+    return;
+  }
+  list.innerHTML = trainingLog.map(entry => `
+    <div class="log-entry">
+      <div class="log-entry-info">
+        <div class="log-entry-date">${formatLogDate(entry.dateISO)}</div>
+        <div class="log-entry-name">${entry.name}</div>
+        <div class="log-entry-meta">⏱ ${entry.durationMin} ${t('minUnit')}${entry.calories ? ' · 🔥 ' + entry.calories + ' ' + t('calUnitShort') : ''}</div>
+        ${entry.exerciseNames && entry.exerciseNames.length ? `<div class="log-entry-chips">${entry.exerciseNames.map(n => `<span class="tag">${n}</span>`).join('')}</div>` : ''}
+        ${entry.notes ? `<div class="log-entry-meta" style="margin-top:4px;">${entry.notes}</div>` : ''}
+      </div>
+      <button class="log-delete-btn" onclick="deleteTrainingLog(${entry.id})" aria-label="delete">🗑</button>
+    </div>
+  `).join('');
+}
+
+function renderWeeklyChart(){
+  const track = document.getElementById('weeklyChartTrack');
+  if(!track) return;
+  const today = new Date();
+  const days = [];
+  for(let i = 6; i >= 0; i--){
+    const d = new Date(today);
+    d.setDate(d.getDate() - i);
+    days.push(d);
+  }
+  const totals = days.map(d => trainingLog
+    .filter(e => new Date(e.dateISO).toDateString() === d.toDateString())
+    .reduce((s, e) => s + Number(e.durationMin || 0), 0));
+  const max = Math.max(...totals, 30);
+  track.innerHTML = totals.map((min, i) => {
+    const pct = Math.max(6, Math.round((min / max) * 100));
+    const isToday = i === totals.length - 1;
+    const color = isToday && min > 0 ? '#d7ff2b' : '#2a2a2a';
+    return `<div style="flex:1; background:${color}; border-radius:3px; height:${pct}%;" title="${min} ${t('minUnit')}"></div>`;
+  }).join('');
 }
 
 /* ================================================================
@@ -967,6 +1255,11 @@ async function saveMeal(){
 
 function renderMeals(){
   const c = document.getElementById('mealsList');
+  if(meals.length === 0){
+    c.innerHTML = `<div class="log-empty">${t('mealsEmptyState')}</div>`;
+    renderNutritionSummary();
+    return;
+  }
   c.innerHTML = meals.map(m => `
     <div class="meal-card">
       <div class="meal-cal">
@@ -1031,6 +1324,10 @@ async function saveExercise(){
 
 function renderExercises(){
   const c = document.getElementById('exercisesGrid');
+  if(exercises.length === 0){
+    c.innerHTML = `<div class="log-empty" style="grid-column: 1 / -1;">${t('exercisesEmptyState')}</div>`;
+    return;
+  }
   c.innerHTML = exercises.map(ex => `
     <div class="ex-card">
       <div class="ex-thumb"></div>
@@ -1094,6 +1391,9 @@ async function init(){
     metrics = await loadKey('metrics', null);
     meals = await loadKey('meals', meals);
     exercises = await loadKey('exercises', exercises);
+    trainingLog = await loadKey('trainingLog', trainingLog);
+    dailyStats = await loadKey('dailyStats', dailyStats);
+    trainingDays = await loadKey('trainingDays', trainingDays);
     if(metrics){
       enterApp();
       return;
