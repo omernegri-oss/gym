@@ -1,0 +1,21 @@
+{
+  "name": "FitPro",
+  "short_name": "FitPro",
+  "description": "Personal training log — sets, weights, progress and nutrition",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#161616",
+  "theme_color": "#161616",
+  "lang": "he",
+  "dir": "rtl",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
