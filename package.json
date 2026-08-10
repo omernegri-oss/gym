@@ -1,0 +1,10 @@
+{
+  "name": "fitpro",
+  "version": "2.0.0",
+  "private": true,
+  "description": "FitPro — personal training log. Static front-end plus one serverless function for machine recognition.",
+  "type": "module",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.72.0"
+  }
+}
