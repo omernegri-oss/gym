@@ -303,7 +303,6 @@ body { font-family: Heebo, Arial, sans-serif; background: #161616; }
       <button class="nav-btn active" data-screen="dashboard" onclick="switchScreen('dashboard', this)" data-i18n="navDashboard">לוח בקרה</button>
       <button class="nav-btn" data-screen="live" onclick="switchScreen('live', this)" data-i18n="navLive">אימון חי</button>
       <button class="nav-btn" data-screen="program" onclick="switchScreen('program', this)" data-i18n="navProgram">תוכנית אימונים</button>
-      <button class="nav-btn" data-screen="history" onclick="switchScreen('history', this)" data-i18n="navHistory">היסטוריה</button>
       <button class="nav-btn" data-screen="nutrition" onclick="switchScreen('nutrition', this)" data-i18n="navNutrition">תזונה ומדדים</button>
     </nav>
 
@@ -426,8 +425,6 @@ body { font-family: Heebo, Arial, sans-serif; background: #161616; }
               <input class="form-input" id="logCalories" placeholder="קלוריות (אופציונלי)" type="number" data-i18n-placeholder="logCaloriesPlaceholder">
               <input class="form-input" id="logNotes" placeholder="הערות (אופציונלי)" data-i18n-placeholder="logNotesPlaceholder">
             </div>
-            <div id="machineDetectionResults"></div>
-            <button class="btn btn-accent" style="width: 100%; margin-bottom: 8px;" onclick="captureAndAnalyzeImage()" data-i18n="captureImage">צלם מכשיר</button>
             <div class="form-actions">
               <button class="form-save" id="logSaveBtnEl" onclick="saveTrainingLog()">שמור אימון ביומן</button>
               <button class="form-cancel" onclick="cancelWorkoutLog()" data-i18n="cancelBtn">ביטול</button>
@@ -507,34 +504,6 @@ body { font-family: Heebo, Arial, sans-serif; background: #161616; }
           </div>
           <button class="btn btn-accent" style="width: 100%; margin-top: 12px;" onclick="updateMetrics()" data-i18n="updateMetricsBtn">עדכן מדדים</button>
         </div>
-      </div>
-    </div>
-
-    <!-- HISTORY SCREEN -->
-    <div id="history" class="screen">
-      <div class="topbar">
-        <div class="topbar-left">
-          <button class="menu-toggle" onclick="openSidebar()" aria-label="Menu">☰</button>
-          <h1 data-i18n="historyTitle">היסטוריית אימונים</h1>
-        </div>
-        <div class="topbar-icons">
-          <button class="icon-btn" onclick="showSearchToast()">🔍</button>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="card-title" data-i18n="weeklyStats">סטטיסטיקות שבועיות</div>
-        <div id="weeklyStatsContainer" style="display: flex; flex-direction: column; gap: 12px;"></div>
-      </div>
-
-      <div class="card">
-        <div class="card-title" data-i18n="monthlyTrends">מגמות חודשיות</div>
-        <div id="monthlyTrendsContainer" style="display: flex; flex-direction: column; gap: 12px;"></div>
-      </div>
-
-      <div class="card">
-        <div class="card-title">סך הכל</div>
-        <div id="historyTotalStats" style="display: flex; justify-content: space-around; margin-top: 12px;"></div>
       </div>
     </div>
 
@@ -695,7 +664,7 @@ const translations = {
     macroTip: '<strong>💡 טיפ:</strong> הנתונים האלו מחושבים בהתאם לפרופיל שלך. אתה יכול לשנות אותם בכל עת.',
     submitBtn: 'התחל עכשיו',
     brandSubtitle: 'מאמן אישי',
-    navDashboard: 'לוח בקרה', navLive: 'אימון חי', navProgram: 'תוכנית אימונים', navHistory: 'היסטוריה', navNutrition: 'תזונה ומדדים',
+    navDashboard: 'לוח בקרה', navLive: 'אימון חי', navProgram: 'תוכנית אימונים', navNutrition: 'תזונה ומדדים',
     startWorkoutBtn: 'התחל אימון',
     greetingDefault: 'שלום 👋',
     heroTrainingDay: 'יום אימון', heroRestDay: 'יום מנוחה',
@@ -736,8 +705,6 @@ const translations = {
     monthNames: ['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'],
     dayNamesShort: ['א׳','ב׳','ג׳','ד׳','ה׳','ו׳','ש׳'],
     mealsEmptyState: 'עדיין לא הוספת ארוחות היום', exercisesEmptyState: 'עדיין לא הוספת תרגילים לתוכנית',
-    historyTitle: 'היסטוריית אימונים', weeklyStats: 'סטטיסטיקות שבועיות', monthlyTrends: 'מגמות חודשיות',
-    captureImage: 'צלם מכשיר', suggestedExercises: 'תרגילים המוצעים', noHistoryYet: 'אין היסטוריה עדיין. התחל אימון כדי לתחיל לעקוב.',
     greeting: (name) => `שלום, ${name} 👋`,
     welcomeToast: (name) => `ברוכים הבאים, ${name}!`
   },
@@ -756,7 +723,7 @@ const translations = {
     macroTip: '<strong>💡 Tip:</strong> these numbers are calculated from your profile. You can change them anytime.',
     submitBtn: 'Get Started',
     brandSubtitle: 'Personal trainer',
-    navDashboard: 'Dashboard', navLive: 'Live Workout', navProgram: 'Training Program', navHistory: 'History', navNutrition: 'Nutrition & Metrics',
+    navDashboard: 'Dashboard', navLive: 'Live Workout', navProgram: 'Training Program', navNutrition: 'Nutrition & Metrics',
     startWorkoutBtn: 'Start Workout',
     greetingDefault: 'Hi 👋',
     heroTrainingDay: 'Training day', heroRestDay: 'Rest day',
@@ -797,8 +764,6 @@ const translations = {
     monthNames: ['January','February','March','April','May','June','July','August','September','October','November','December'],
     dayNamesShort: ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'],
     mealsEmptyState: "You haven't added any meals yet today", exercisesEmptyState: "You haven't added exercises to your program yet",
-    historyTitle: 'Workout History', weeklyStats: 'Weekly Statistics', monthlyTrends: 'Monthly Trends',
-    captureImage: 'Capture Machine', suggestedExercises: 'Suggested Exercises', noHistoryYet: 'No history yet. Start a workout to begin tracking.',
     greeting: (name) => `Hi, ${name} 👋`,
     welcomeToast: (name) => `Welcome, ${name}!`
   }
@@ -1032,7 +997,6 @@ function enterApp(){
   renderMetricsForm();
   renderTrainingLog();
   renderWeeklyChart();
-  renderHistoryStats();
   document.getElementById('liveTimer').textContent = formatTimer(workoutSeconds);
   updateWorkoutButtons();
   renderDailyStats();
@@ -1308,7 +1272,6 @@ async function saveTrainingLog(){
   renderTrainingLog();
   renderWeeklyChart();
   renderHero();
-  renderHistoryStats();
   flashToast(isEdit ? t('logUpdatedToast') : t('logSavedToast'));
 }
 
@@ -1622,144 +1585,6 @@ function flashToast(msg){
   t.classList.add('show');
   clearTimeout(toastTimer);
   toastTimer = setTimeout(()=>t.classList.remove('show'), 2200);
-}
-
-/* ================================================================
-   HISTORY SCREEN — weekly and monthly aggregation
-   ================================================================ */
-function renderHistoryStats(){
-  const weeklyContainer = document.getElementById('weeklyStatsContainer');
-  const monthlyContainer = document.getElementById('monthlyTrendsContainer');
-
-  if(!weeklyContainer || trainingLog.length === 0) {
-    if(weeklyContainer) weeklyContainer.innerHTML = `<div class="log-empty">${t('noHistoryYet')}</div>`;
-    return;
-  }
-
-  // Group by week
-  const weeks = {};
-  trainingLog.forEach(log => {
-    const date = new Date(log.dateISO);
-    const weekStart = new Date(date);
-    weekStart.setDate(date.getDate() - date.getDay());
-    const weekKey = weekStart.toDateString();
-    if (!weeks[weekKey]) weeks[weekKey] = [];
-    weeks[weekKey].push(log);
-  });
-
-  // Render weekly stats
-  let weeklyHtml = '';
-  Object.keys(weeks).sort((a,b) => new Date(b) - new Date(a)).forEach(week => {
-    const logs = weeks[week];
-    const totalMins = logs.reduce((s, l) => s + (Number(l.durationMin) || 0), 0);
-    const totalCals = logs.reduce((s, l) => s + (Number(l.calories) || 0), 0);
-    weeklyHtml += `<div style="padding:8px; background:#1a1a1a; border-radius:8px; font-size:11px;">
-      <div style="font-weight:700; margin-bottom:4px;">${week}</div>
-      <div>${logs.length} אימונים · ${totalMins} דקות · ${totalCals.toLocaleString()} קק"ל</div>
-    </div>`;
-  });
-  if(weeklyContainer) weeklyContainer.innerHTML = weeklyHtml;
-
-  // Render monthly stats
-  const months = {};
-  trainingLog.forEach(log => {
-    const date = new Date(log.dateISO);
-    const monthKey = t('monthNames')[date.getMonth()] + ' ' + date.getFullYear();
-    if (!months[monthKey]) months[monthKey] = [];
-    months[monthKey].push(log);
-  });
-
-  let monthlyHtml = '';
-  Object.keys(months).sort().reverse().forEach(month => {
-    const logs = months[month];
-    const totalMins = logs.reduce((s, l) => s + (Number(l.durationMin) || 0), 0);
-    const totalCals = logs.reduce((s, l) => s + (Number(l.calories) || 0), 0);
-    monthlyHtml += `<div style="padding:8px; background:#1a1a1a; border-radius:8px; font-size:11px;">
-      <div style="font-weight:700; margin-bottom:4px;">${month}</div>
-      <div>${logs.length} אימונים · ${totalMins} דקות · ${totalCals.toLocaleString()} קק"ל</div>
-    </div>`;
-  });
-  if(monthlyContainer) monthlyContainer.innerHTML = monthlyHtml;
-
-  // Total stats
-  const totalMins = trainingLog.reduce((s, l) => s + (Number(l.durationMin) || 0), 0);
-  const totalCals = trainingLog.reduce((s, l) => s + (Number(l.calories) || 0), 0);
-  const totalStats = document.getElementById('historyTotalStats');
-  if(totalStats) {
-    totalStats.innerHTML = `
-      <div style="text-align:center;">
-        <div style="font-size:20px; font-weight:700; color:#d7ff2b;">${trainingLog.length}</div>
-        <div style="font-size:11px; color:#6f6f6f;">אימונים</div>
-      </div>
-      <div style="text-align:center;">
-        <div style="font-size:20px; font-weight:700; color:#3fd7e8;">${totalMins}</div>
-        <div style="font-size:11px; color:#6f6f6f;">דקות</div>
-      </div>
-      <div style="text-align:center;">
-        <div style="font-size:20px; font-weight:700; color:#e0c93f;">${totalCals.toLocaleString()}</div>
-        <div style="font-size:11px; color:#6f6f6f;">קק"ל</div>
-      </div>
-    `;
-  }
-}
-
-/* ================================================================
-   MACHINE IMAGE RECOGNITION — camera capture + vision API
-   ================================================================ */
-async function captureAndAnalyzeImage(){
-  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-    flashToast('Camera not available on this device');
-    return;
-  }
-
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
-    const video = document.createElement('video');
-    video.srcObject = stream;
-    video.play();
-
-    setTimeout(async () => {
-      const canvas = document.createElement('canvas');
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(video, 0, 0);
-      stream.getTracks().forEach(track => track.stop());
-
-      const imageData = canvas.toDataURL('image/jpeg', 0.7);
-
-      // For demo, we'll simulate detection with common gym equipment
-      const simulatedSuggestions = ['Barbell Bench', 'Dumbbell Press', 'Cable Machine'];
-      displaySuggestedExercises(simulatedSuggestions);
-      flashToast('Equipment detected! Select exercises below.');
-    }, 1500);
-  } catch(err) {
-    flashToast('Could not access camera');
-  }
-}
-
-function displaySuggestedExercises(exercises){
-  const container = document.getElementById('machineDetectionResults');
-  if (!container) return;
-
-  const suggestionsHtml = exercises
-    .map(ex => `<button onclick="addSuggestedExercise('${esc(ex)}')" style="padding:8px 12px; margin:4px 2px; background:#d7ff2b; color:#141400; border:none; border-radius:6px; cursor:pointer; font-size:11px; font-weight:700;">${esc(ex)}</button>`)
-    .join('');
-
-  container.innerHTML = `<div style="margin:8px 0; font-size:12px; color:#9c9c9c; padding:8px; background:#1a1a1a; border-radius:6px;">${t('suggestedExercises')}: ${suggestionsHtml}</div>`;
-}
-
-async function addSuggestedExercise(exerciseName){
-  const exists = exercises.some(ex => ex.name.toLowerCase() === exerciseName.toLowerCase());
-  if (!exists) {
-    exercises.push({ name: exerciseName, tag: t('generalTag'), sets: '3', reps: '10' });
-    await saveKey('exercises', exercises);
-    renderExercises();
-    renderExerciseChecklist();
-    flashToast(`Added: ${exerciseName}`);
-  } else {
-    flashToast('Exercise already exists');
-  }
 }
 
 /* ================================================================
