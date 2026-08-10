@@ -49,6 +49,12 @@ function esc(v){
 }
 function num(v, d){ const n = Number(v); return Number.isFinite(n) ? n : (d || 0); }
 
+/* Whole number >= 1; blank, zero or negative falls back to `dflt`. */
+function posInt(v, dflt){
+  const n = Math.round(num(v));
+  return n >= 1 ? n : dflt;
+}
+
 const MEAL_TAG_EMOJI = { breakfast:'\u{1F373}', lunch:'\u{1F37D}\u{FE0F}', dinner:'\u{1F319}', snack:'\u{1F34E}' };
 const MUSCLES = ['chest','back','legs','shoulders','arms','core','cardio','other'];
 const MUSCLE_KEY = { chest:'muscleChest', back:'muscleBack', legs:'muscleLegs', shoulders:'muscleShoulders',
@@ -881,14 +887,17 @@ function toggleExerciseForm(show){
 function saveExercise(){
   const name = document.getElementById('exName').value.trim();
   if(!name){ flashToast(t('exerciseNameAlert')); return; }
+  /* sets/reps used to be stored as the raw input string, so "-5" went straight
+     into the record. Everything numeric here is clamped to a sane floor: a
+     negative set count, rep count, load or rest interval is never meaningful. */
   const payload = {
     name: name,
     tag: document.getElementById('exTag').value.trim() || t('generalTag'),
     muscle: document.getElementById('exMuscle').value || 'other',
-    sets: document.getElementById('exSets').value || '3',
-    reps: document.getElementById('exReps').value || '10',
-    targetKg: num(document.getElementById('exKg').value),
-    restSec: num(document.getElementById('exRest').value) || settings.defaultRestSec
+    sets: String(posInt(document.getElementById('exSets').value, 3)),
+    reps: String(posInt(document.getElementById('exReps').value, 10)),
+    targetKg: Math.max(0, num(document.getElementById('exKg').value)),
+    restSec: posInt(document.getElementById('exRest').value, settings.defaultRestSec)
   };
   const isEdit = editingExerciseIndex !== null;
   if(isEdit){
@@ -2091,6 +2100,30 @@ function flashToast(msg){
 }
 
 /* ---------- 18. boot ---------- */
+/* No figure in this app is ever meaningfully negative — not sets, reps, load,
+   rest, sleep, steps, body weight or calories. type="number" does not stop a
+   "-" being typed (min/max are only enforced on <form> submit, and none of
+   these inputs live in a form), so block the sign at the keyboard and strip it
+   from anything pasted or spun in. Delegated, so it covers the set rows that
+   are rendered during a workout. */
+const SIGN_KEYS = ['-', '+', 'e', 'E'];
+document.addEventListener('keydown', function(e){
+  const el = e.target;
+  if(!el || el.type !== 'number') return;
+  if(e.ctrlKey || e.metaKey || e.altKey) return;   // leave Ctrl/Cmd+- (zoom) alone
+  if(SIGN_KEYS.indexOf(e.key) !== -1) e.preventDefault();
+}, true);
+
+document.addEventListener('input', function(e){
+  const el = e.target;
+  if(!el || el.type !== 'number') return;
+  if(el.value.indexOf('-') === -1) return;
+  const cleaned = el.value.replace(/-/g, '');
+  el.value = cleaned;
+  // Re-run the field's own handler so state matches what is now displayed.
+  el.dispatchEvent(new Event('change', { bubbles: true }));
+}, true);
+
 document.addEventListener('keydown', function(e){
   if(e.key !== 'Escape') return;
   closeSidebar();
