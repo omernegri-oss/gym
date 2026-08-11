@@ -308,7 +308,10 @@
           </div>
 
           <div class="card">
-            <div class="card-title" data-i18n="exercisesTitle">תרגילים</div>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+              <div class="card-title" style="margin:0;" data-i18n="exercisesTitle">תרגילים</div>
+              <button class="btn btn-sm" onclick="openCamera('machine')" data-i18n="captureImage">📷 צלם מכשיר</button>
+            </div>
             <div id="exercisesGrid" class="ex-grid"></div>
 
             <div class="add-form" id="exerciseForm">
