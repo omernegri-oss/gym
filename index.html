@@ -260,7 +260,33 @@
           <button class="btn btn-sm" onclick="openCamera('machine')" data-i18n="captureImage">📷 צלם מכשיר</button>
         </div>
         <div id="sessionExercises"></div>
-        <button class="btn" style="width:100%; margin-top:10px;" onclick="openAddToSession()" data-i18n="addToSessionBtn">＋ הוסף תרגיל לאימון</button>
+
+        <!-- Editing/creating here is scoped to the running workout: the saved
+             program is deliberately never touched from this form. -->
+        <div class="add-form" id="sessionExForm">
+          <div style="font-size:11px; color:#6f6f6f; margin-bottom:8px; line-height:1.5;" data-i18n="sessionExScopeHint">שינויים כאן חלים על האימון הזה בלבד — התוכנית השמורה לא משתנה</div>
+          <div class="form-row">
+            <input class="form-input" id="sesExName" placeholder="שם התרגיל" data-i18n-placeholder="exNamePlaceholder">
+            <select class="form-input" id="sesExMuscle" aria-label="muscle"></select>
+          </div>
+          <div class="form-row-3" id="sesExSeedRow">
+            <input class="form-input" id="sesExSets" placeholder="סטים" type="number" min="1" step="1" inputmode="numeric" data-i18n-placeholder="exSetsPlaceholder">
+            <input class="form-input" id="sesExReps" placeholder="חזרות" type="number" min="1" step="1" inputmode="numeric" data-i18n-placeholder="exRepsPlaceholder">
+            <input class="form-input" id="sesExKg" placeholder="משקל" type="number" min="0" step="0.5" inputmode="decimal" data-i18n-placeholder="exKgPlaceholder">
+          </div>
+          <div class="form-row">
+            <input class="form-input" id="sesExRest" placeholder="מנוחה (שנ׳)" type="number" min="0" step="5" inputmode="numeric" data-i18n-placeholder="exRestPlaceholder">
+          </div>
+          <div class="form-actions">
+            <button class="form-save" id="sesExSaveBtn" onclick="saveSessionExercise()">שמור תרגיל</button>
+            <button class="form-cancel" onclick="toggleSessionExForm(false)" data-i18n="cancelBtn">ביטול</button>
+          </div>
+        </div>
+
+        <div class="btn-group">
+          <button class="btn" onclick="openAddToSession()" data-i18n="addToSessionBtn">＋ הוסף תרגיל לאימון</button>
+          <button class="btn" onclick="openNewSessionExercise()" data-i18n="newSessionExBtn">＋ תרגיל חדש</button>
+        </div>
       </div>
 
       <div class="add-form" id="workoutLogForm">

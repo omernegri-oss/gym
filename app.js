@@ -234,6 +234,10 @@ const translations = {
     addSetBtn: '＋ הוסף סט', lastTimeLabel: 'בפעם הקודמת:', noLastTime: 'אימון ראשון בתרגיל הזה',
     sessionEmpty: 'לא נבחרו תרגילים. הוסיפו תרגילים לאימון כדי לתעד סטים.',
     addToSessionBtn: '＋ הוסף תרגיל לאימון', sessionTitle: 'תרגילי האימון',
+    newSessionExBtn: '＋ תרגיל חדש',
+    sessionExScopeHint: 'שינויים כאן חלים על האימון הזה בלבד — התוכנית השמורה לא משתנה',
+    moveUpAction: 'הזז למעלה', moveDownAction: 'הזז למטה',
+    sessionExAddedToast: 'התרגיל נוסף לאימון', sessionExUpdatedToast: 'התרגיל עודכן באימון',
     prToast: '🏆 שיא חדש!', e1rmLabel: '1RM משוער',
     /* rest timer */
     restLabel: 'מנוחה', restSkip: 'דלג', restPlus: '+30 שנ׳', restDoneToast: 'המנוחה הסתיימה — לסט הבא!',
@@ -362,6 +366,10 @@ const translations = {
     addSetBtn: '＋ Add set', lastTimeLabel: 'Last time:', noLastTime: 'First time doing this exercise',
     sessionEmpty: 'No exercises picked. Add exercises to this workout to log sets.',
     addToSessionBtn: '＋ Add exercise to workout', sessionTitle: 'Workout exercises',
+    newSessionExBtn: '＋ New exercise',
+    sessionExScopeHint: 'Changes here apply to this workout only — your saved program is untouched',
+    moveUpAction: 'Move up', moveDownAction: 'Move down',
+    sessionExAddedToast: 'Exercise added to this workout', sessionExUpdatedToast: 'Exercise updated in this workout',
     prToast: '🏆 New PR!', e1rmLabel: 'Est. 1RM',
     restLabel: 'Rest', restSkip: 'Skip', restPlus: '+30s', restDoneToast: 'Rest over — next set!',
     templatesTitle: 'Workout templates', templateNamePlaceholder: 'Template name (e.g. Push)',
@@ -476,6 +484,8 @@ function updateFormLabels(){
   if(lb) lb.textContent = editingLogId === null ? t('logSaveBtn') : t('saveChangesBtn');
   const tb = document.getElementById('tplSaveBtn');
   if(tb) tb.textContent = editingTemplateId === null ? t('saveTemplateBtn') : t('saveChangesBtn');
+  const sb = document.getElementById('sesExSaveBtn');
+  if(sb) sb.textContent = editingSessionExIndex === null ? t('saveExerciseBtn') : t('saveChangesBtn');
 }
 
 /* ---------- 5. profiles ---------- */
@@ -865,14 +875,17 @@ function saveDayMetric(field){
 }
 
 /* ---------- 10. program: exercises, templates, day picker ---------- */
+/* Both the program form and the in-workout form pick from the same list. */
 function renderMuscleOptions(){
-  const sel = document.getElementById('exMuscle');
-  if(!sel) return;
-  const cur = sel.value;
-  sel.innerHTML = MUSCLES.map(function(m){
-    return '<option value="' + m + '">' + esc(muscleLabel(m)) + '</option>';
-  }).join('');
-  if(cur) sel.value = cur;
+  ['exMuscle', 'sesExMuscle'].forEach(function(id){
+    const sel = document.getElementById(id);
+    if(!sel) return;
+    const cur = sel.value;
+    sel.innerHTML = MUSCLES.map(function(m){
+      return '<option value="' + m + '">' + esc(muscleLabel(m)) + '</option>';
+    }).join('');
+    if(cur) sel.value = cur;
+  });
 }
 
 function renderDayPicker(){
@@ -1238,7 +1251,13 @@ function renderSession(){
   if(!c) return;
   const wrap = document.getElementById('sessionCard');
   if(wrap) wrap.style.display = workoutState === 'idle' ? 'none' : '';
-  if(workoutState === 'idle'){ c.innerHTML = ''; return; }
+  if(workoutState === 'idle'){
+    c.innerHTML = '';
+    // The card is gone; leaving the form open would carry an index from the
+    // finished workout into the next one.
+    toggleSessionExForm(false);
+    return;
+  }
 
   if(session.entries.length === 0){
     c.innerHTML = '<div class="log-empty">' + esc(t('sessionEmpty')) + '</div>';
@@ -1281,6 +1300,11 @@ function renderSession(){
         '</div>' +
         '<div class="card-actions">' +
           '<span class="tag muscle">' + esc(muscleLabel(it.muscle)) + '</span>' +
+          '<button class="icon-action" onclick="moveSessionExercise(' + ei + ',-1)"' + (ei === 0 ? ' disabled' : '') +
+            ' aria-label="' + esc(t('moveUpAction')) + '">↑</button>' +
+          '<button class="icon-action" onclick="moveSessionExercise(' + ei + ',1)"' + (ei === session.entries.length - 1 ? ' disabled' : '') +
+            ' aria-label="' + esc(t('moveDownAction')) + '">↓</button>' +
+          '<button class="icon-action" onclick="editSessionExercise(' + ei + ')" aria-label="' + esc(t('editAction')) + '">✎</button>' +
           '<button class="icon-action danger" onclick="removeSessionExercise(' + ei + ')" aria-label="' + esc(t('deleteAction')) + '">🗑</button>' +
         '</div>' +
       '</div>' +
@@ -1344,6 +1368,9 @@ function removeSet(ei, si){
 }
 function removeSessionExercise(ei){
   session.entries.splice(ei, 1);
+  // Every index after this one just shifted; an open edit form would now be
+  // pointing at the wrong exercise.
+  if(editingSessionExIndex !== null) toggleSessionExForm(false);
   persistWorkout();
   renderSession();
 }
@@ -1375,6 +1402,104 @@ function addExerciseToSession(exId){
   persistWorkout();
   renderSession();
   closeAddToSession();
+}
+
+/* ---- editing the running workout ----------------------------------------
+   Mid-workout reality rarely matches the plan: a machine is taken, the name
+   was wrong, rest needs to be longer today. All of this edits the session
+   copy only — `exercises` (the saved program) is never written from here, so
+   a one-off change today does not silently rewrite tomorrow's plan. */
+let editingSessionExIndex = null;
+
+function clearSessionExForm(){
+  ['sesExName','sesExSets','sesExReps','sesExKg','sesExRest'].forEach(function(id){
+    const el = document.getElementById(id);
+    if(el) el.value = '';
+  });
+}
+
+function toggleSessionExForm(show){
+  const f = document.getElementById('sessionExForm');
+  if(!f) return;
+  f.classList.toggle('show', show);
+  if(!show){ editingSessionExIndex = null; clearSessionExForm(); }
+  updateFormLabels();
+}
+
+/* A brand-new exercise that exists for this workout only — no program entry
+   is created, so `exId` stays null. */
+function openNewSessionExercise(){
+  const f = document.getElementById('sessionExForm');
+  if(!f) return;
+  editingSessionExIndex = null;
+  clearSessionExForm();
+  renderMuscleOptions();
+  document.getElementById('sesExMuscle').value = 'other';
+  document.getElementById('sesExSets').value = '1';
+  document.getElementById('sesExReps').value = '10';
+  document.getElementById('sesExRest').value = settings.defaultRestSec;
+  document.getElementById('sesExSeedRow').style.display = '';
+  f.classList.add('show');
+  updateFormLabels();
+  f.scrollIntoView({ behavior:'smooth', block:'center' });
+}
+
+function editSessionExercise(ei){
+  const it = session.entries[ei];
+  if(!it) return;
+  const f = document.getElementById('sessionExForm');
+  if(!f) return;
+  editingSessionExIndex = ei;
+  clearSessionExForm();
+  renderMuscleOptions();
+  document.getElementById('sesExName').value = it.name || '';
+  document.getElementById('sesExMuscle').value = it.muscle || 'other';
+  document.getElementById('sesExRest').value = num(it.restSec) || settings.defaultRestSec;
+  // The set rows below are already editable one by one, so seeding fields
+  // would only be a second, conflicting way to say the same thing.
+  document.getElementById('sesExSeedRow').style.display = 'none';
+  f.classList.add('show');
+  updateFormLabels();
+  f.scrollIntoView({ behavior:'smooth', block:'center' });
+}
+
+function saveSessionExercise(){
+  const name = document.getElementById('sesExName').value.trim();
+  if(!name){ flashToast(t('exerciseNameAlert')); return; }
+  const muscle = document.getElementById('sesExMuscle').value || 'other';
+  const restSec = posInt(document.getElementById('sesExRest').value, settings.defaultRestSec);
+  const isEdit = editingSessionExIndex !== null;
+
+  if(isEdit){
+    const it = session.entries[editingSessionExIndex];
+    if(!it){ toggleSessionExForm(false); return; }
+    it.name = name;
+    it.muscle = muscle;
+    it.restSec = restSec;
+  } else {
+    const count = posInt(document.getElementById('sesExSets').value, 1);
+    const reps = Math.max(0, num(document.getElementById('sesExReps').value));
+    const kg = Math.max(0, num(document.getElementById('sesExKg').value));
+    const sets = [];
+    for(let i = 0; i < count; i++) sets.push({ kg: kg, reps: reps, done: false });
+    session.entries.push({ exId: null, name: name, muscle: muscle, restSec: restSec, sets: sets });
+  }
+
+  persistWorkout();
+  renderSession();
+  toggleSessionExForm(false);
+  flashToast(isEdit ? t('sessionExUpdatedToast') : t('sessionExAddedToast'));
+}
+
+/* Reordering shifts every index the open form is holding, so close it first. */
+function moveSessionExercise(ei, delta){
+  const to = ei + delta;
+  if(to < 0 || to >= session.entries.length) return;
+  if(editingSessionExIndex !== null) toggleSessionExForm(false);
+  const moved = session.entries.splice(ei, 1)[0];
+  session.entries.splice(to, 0, moved);
+  persistWorkout();
+  renderSession();
 }
 
 /* rest timer */
