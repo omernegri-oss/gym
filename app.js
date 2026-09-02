@@ -266,6 +266,23 @@ const translations = {
     visionNotConfigured: 'זיהוי המכשירים אינו מוגדר בשרת. צריך להוסיף ANTHROPIC_API_KEY ל-Vercel כדי להפעיל את הפיצ׳ר. עד אז אפשר להוסיף את התרגיל ידנית.',
     visionFailed: 'הניתוח נכשל. נסו שוב או הוסיפו את התרגיל ידנית.',
     visionAddBtn: '＋ הוסף לתוכנית',
+    /* machine info card */
+    infoBrandLabel: 'יצרן ודגם', infoMusclesLabel: 'שרירים', infoSecondaryLabel: 'שרירים משניים',
+    infoSetupLabel: 'כיוון המכשיר', infoHowLabel: 'ביצוע', infoMistakesLabel: 'טעויות נפוצות ובטיחות',
+    infoSuggestLabel: 'המלצה מותאמת לך', infoSourcesLabel: 'מקורות',
+    infoNoSources: 'נבנה מהתמונה בלבד, ללא חיפוש ברשת',
+    confHigh: 'זיהוי ודאי', confMedium: 'זיהוי סביר', confLow: 'זיהוי לא ודאי',
+    infoBtn: 'מידע על המכשיר', infoNone: 'אין מידע שמור על התרגיל הזה',
+    notAMachine: 'לא זוהה מכשיר כושר בתמונה',
+    /* QR */
+    qrHint: 'סרקו את קוד ה-QR שעל המכשיר כדי לזהות אותו בוודאות',
+    qrScanBtn: '🔳 סרוק QR', qrStopBtn: '■ עצור סריקה', qrManualBtn: 'הדבק קישור', qrUseBtn: 'השתמש בקישור',
+    qrScanning: 'מחפש קוד QR… כוונו את המצלמה לקוד',
+    qrFound: 'הקוד נסרק — מנתח מחדש עם המידע מהיצרן',
+    qrNoCamera: 'אין גישה למצלמה לסריקת QR — אפשר להדביק את הקישור ידנית',
+    qrBadUrl: 'הקישור אינו תקין',
+    qrUnsupported: 'פענוח ה-QR לא נטען. אפשר לסרוק עם אפליקציית המצלמה של הטלפון ולהדביק כאן את הקישור.',
+    qrNeeded: 'הזיהוי אינו ודאי. סריקת קוד ה-QR שעל המכשיר תיתן זיהוי מדויק.',
     /* vision: food */
     captureFood: '📷 צלם אוכל', cameraTitleFood: 'זיהוי ארוחה',
     cameraHintFood: 'כוונו את המצלמה לצלחת וצלמו',
@@ -393,6 +410,21 @@ const translations = {
     visionNotConfigured: 'Machine recognition is not configured on the server. Add ANTHROPIC_API_KEY in Vercel to enable it. Until then you can add the exercise manually.',
     visionFailed: 'Analysis failed. Try again or add the exercise manually.',
     visionAddBtn: '＋ Add to program',
+    infoBrandLabel: 'Make and model', infoMusclesLabel: 'Muscles', infoSecondaryLabel: 'Secondary muscles',
+    infoSetupLabel: 'Machine setup', infoHowLabel: 'How to perform', infoMistakesLabel: 'Common mistakes and safety',
+    infoSuggestLabel: 'Recommended for you', infoSourcesLabel: 'Sources',
+    infoNoSources: 'Built from the photo alone, without a web search',
+    confHigh: 'Confident match', confMedium: 'Likely match', confLow: 'Uncertain match',
+    infoBtn: 'Machine info', infoNone: 'No saved information for this exercise',
+    notAMachine: 'No gym equipment found in the photo',
+    qrHint: 'Scan the QR sticker on the machine to identify it for certain',
+    qrScanBtn: '🔳 Scan QR', qrStopBtn: '■ Stop scanning', qrManualBtn: 'Paste link', qrUseBtn: 'Use this link',
+    qrScanning: 'Looking for a QR code… point the camera at it',
+    qrFound: 'Code scanned — re-analysing with the manufacturer page',
+    qrNoCamera: 'No camera access for QR scanning — you can paste the link manually',
+    qrBadUrl: 'That link is not valid',
+    qrUnsupported: 'The QR decoder did not load. Scan with your phone camera app and paste the link here.',
+    qrNeeded: 'The match is not certain. Scanning the QR sticker on the machine will pin it down.',
     captureFood: '📷 Capture food', cameraTitleFood: 'Food recognition',
     cameraHintFood: 'Point the camera at your plate and capture',
     visionNotConfiguredFood: 'Food recognition is not configured on the server. Add ANTHROPIC_API_KEY in Vercel to enable it. Until then you can add the meal manually.',
@@ -470,6 +502,7 @@ function applyLanguage(lang){
   updateRestUI();
   updateFormLabels();
   refreshCameraModalText();
+  updateQrScanBtn();
   const g = document.getElementById('greetingText');
   if(g) g.textContent = user ? translations[currentLang].greeting(user.name) : t('greetingDefault');
 }
@@ -993,6 +1026,7 @@ function renderExercises(){
         (best > 0 ? '<div class="ex-meta">' + esc(t('e1rmLabel')) + ': ' + best.toFixed(1) + ' ' + esc(t('kgUnit')) + '</div>' : '') +
         '<div class="ex-tags"><span class="tag muscle">' + esc(muscleLabel(ex.muscle)) + '</span></div>' +
         '<div class="card-actions" style="margin-top:6px;">' +
+          (ex.info ? '<button class="icon-action" onclick="openExerciseInfo(\'' + esc(ex.id) + '\')" aria-label="' + esc(t('infoBtn')) + '">ℹ️</button>' : '') +
           '<button class="icon-action" onclick="editExercise(' + i + ')" aria-label="' + esc(t('editAction')) + '">✎</button>' +
           '<button class="icon-action danger" onclick="deleteExercise(' + i + ')" aria-label="' + esc(t('deleteAction')) + '">🗑</button>' +
         '</div>' +
@@ -1316,6 +1350,8 @@ function renderSession(){
         '</div>' +
         '<div class="card-actions">' +
           '<span class="tag muscle">' + esc(muscleLabel(it.muscle)) + '</span>' +
+          (planned && planned.info
+            ? '<button class="icon-action" onclick="openExerciseInfo(\'' + esc(planned.id) + '\')" aria-label="' + esc(t('infoBtn')) + '">ℹ️</button>' : '') +
           '<button class="icon-action" onclick="moveSessionExercise(' + ei + ',-1)"' + (ei === 0 ? ' disabled' : '') +
             ' aria-label="' + esc(t('moveUpAction')) + '">↑</button>' +
           '<button class="icon-action" onclick="moveSessionExercise(' + ei + ',1)"' + (ei === session.entries.length - 1 ? ' disabled' : '') +
@@ -2043,6 +2079,13 @@ function openCamera(mode){
   camShot.src = '';
   document.getElementById('camVideo').style.display = 'none';
   document.getElementById('camHint').style.display = '';
+  // A QR scanned for the previous machine must never be attached to the next one.
+  stopQrScan();
+  pendingQrUrl = null;
+  lastMachineData = null;
+  showQrPanel(false);
+  const qrInput = document.getElementById('qrUrlInput');
+  if(qrInput) qrInput.value = '';
   document.getElementById('camModal').classList.add('show');
   updateCamButtons('idle');
 }
@@ -2059,6 +2102,8 @@ function refreshCameraModalText(){
     visionMode === 'food' ? t('cameraHintFood') : t('cameraHint');
 }
 function closeCamera(){
+  clearInterval(qrScanHandle);
+  qrScanHandle = null;
   stopCamStream();
   document.getElementById('camModal').classList.remove('show');
 }
@@ -2111,6 +2156,10 @@ function retakePhoto(){
   capturedDataUrl = null;
   document.getElementById('camShot').style.display = 'none';
   document.getElementById('visionResult').innerHTML = '';
+  // A new photo is a new machine: drop the previous card and its QR.
+  lastMachineData = null;
+  pendingQrUrl = null;
+  showQrPanel(false);
   startCamera();
 }
 
@@ -2120,6 +2169,46 @@ function retakePhoto(){
    payload key marks success, and which renderer runs all follow visionMode —
    set once in openCamera() — so the capture/shutter/retake flow above is
    shared between the two analysis targets without duplication. */
+
+/* The full card the machine endpoint returned, kept so the "add" button and
+   the QR retry can both work from it. It also means the card's buttons no
+   longer have to smuggle the payload through an onclick attribute. */
+let lastMachineData = null;
+let pendingQrUrl = null;
+
+/* Strength proxy for the weight recommendation: the best single set the user
+   has ever logged, across every exercise. It says nothing about this machine,
+   which is exactly how it is described to the model. */
+function bestOverallE1RM(){
+  let best = 0;
+  trainingLog.forEach(function(en){
+    (en.entries || []).forEach(function(it){
+      (it.sets || []).forEach(function(sv){
+        const v = e1rm(num(sv.kg), num(sv.reps));
+        if(v > best) best = v;
+      });
+    });
+  });
+  return best;
+}
+
+/* Everything the app already knows about the trainee. Nothing here is asked
+   of the user a second time. */
+function visionProfile(){
+  const p = {};
+  if(user){
+    if(user.gender) p.gender = user.gender;
+    if(num(user.age) > 0) p.age = num(user.age);
+    if(user.goal) p.goal = user.goal;
+  }
+  const bodyKg = (metrics && num(metrics.weight)) || (user && num(user.weight)) || 0;
+  if(bodyKg > 0) p.bodyKg = bodyKg;
+  p.workoutsLogged = trainingLog.length;
+  const best = bestOverallE1RM();
+  if(best > 0) p.bestE1RM = Math.round(best);
+  return p;
+}
+
 async function analyzePhoto(){
   if(!capturedDataUrl) return;
   const out = document.getElementById('visionResult');
@@ -2128,11 +2217,17 @@ async function analyzePhoto(){
   const endpoint = isFood ? '/api/analyze-food' : '/api/analyze-machine';
   const notConfiguredKey = isFood ? 'visionNotConfiguredFood' : 'visionNotConfigured';
   const failedKey = isFood ? 'visionFailedFood' : 'visionFailed';
+  const payload = { image: capturedDataUrl, lang: currentLang };
+  if(!isFood){
+    payload.profile = visionProfile();
+    // Only present when the user actually scanned the sticker on this machine.
+    if(pendingQrUrl) payload.qrUrl = pendingQrUrl;
+  }
   try {
     const res = await fetch(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ image: capturedDataUrl, lang: currentLang })
+      body: JSON.stringify(payload)
     });
     // 501 = key not set; 404/405 = deployed without a serverless runtime at all.
     if(res.status === 501 || res.status === 404 || res.status === 405){
@@ -2149,41 +2244,278 @@ async function analyzePhoto(){
   }
 }
 
+/* Model output is not a trusted source of URLs. Anything that is not plain
+   http(s) never becomes an href. */
+function safeUrl(v){
+  if(typeof v !== 'string') return null;
+  try {
+    const u = new URL(v);
+    return (u.protocol === 'http:' || u.protocol === 'https:') ? u.href : null;
+  } catch(e){ return null; }
+}
+
+function confLabel(c){
+  return c === 'high' ? t('confHigh') : c === 'low' ? t('confLow') : t('confMedium');
+}
+
+function infoBlock(label, body){
+  return '<div class="info-block"><div class="info-label">' + esc(label) + '</div>' + body + '</div>';
+}
+
+/* One renderer for both places the card appears: straight after a photo, and
+   later from the saved copy on the exercise. */
+function machineInfoHtml(d){
+  const conf = ['high','medium','low'].indexOf(d.confidence) !== -1 ? d.confidence : 'medium';
+  const brand = [d.brand, d.model].filter(function(x){ return x && String(x).trim(); }).join(' · ');
+  const secondary = (d.secondaryMuscles || []).filter(function(m){ return MUSCLES.indexOf(m) !== -1; });
+  const mistakes = (d.mistakes || []).filter(function(x){ return x && String(x).trim(); });
+  const sources = (d.sources || []).map(safeUrl).filter(Boolean);
+  let html = '<div><span class="conf ' + conf + '">' + esc(confLabel(conf)) + '</span></div>';
+
+  if(brand) html += infoBlock(t('infoBrandLabel'), '<div class="info-text">' + esc(brand) + '</div>');
+
+  let muscleTags = '<span class="tag muscle">' + esc(muscleLabel(d.muscle)) + '</span>';
+  if(secondary.length){
+    muscleTags += secondary.map(function(m){
+      return ' <span class="tag">' + esc(muscleLabel(m)) + '</span>';
+    }).join('');
+  }
+  html += infoBlock(secondary.length ? t('infoMusclesLabel') : t('infoMusclesLabel'),
+    '<div class="ex-tags">' + muscleTags + '</div>');
+
+  if(d.setup) html += infoBlock(t('infoSetupLabel'), '<div class="info-text">' + esc(d.setup) + '</div>');
+  if(d.howTo) html += infoBlock(t('infoHowLabel'), '<div class="info-text">' + esc(d.howTo) + '</div>');
+  if(mistakes.length){
+    html += infoBlock(t('infoMistakesLabel'), '<ul class="info-list">' +
+      mistakes.map(function(m){ return '<li>' + esc(m) + '</li>'; }).join('') + '</ul>');
+  }
+
+  const kg = num(d.suggestedKg);
+  if(d.suggestion || kg > 0){
+    let body = '';
+    if(kg > 0) body += '<div class="info-kg">' + kg + ' ' + esc(t('kgUnit')) + '</div>';
+    if(d.suggestion) body += '<div class="info-text">' + esc(d.suggestion) + '</div>';
+    if(d.suggestionWhy) body += '<div class="info-sub">' + esc(d.suggestionWhy) + '</div>';
+    html += infoBlock(t('infoSuggestLabel'), body);
+  }
+
+  html += infoBlock(t('infoSourcesLabel'), sources.length
+    ? '<div class="info-sources">' + sources.map(function(u){
+        return '<a href="' + esc(u) + '" target="_blank" rel="noopener noreferrer">' + esc(u) + '</a>';
+      }).join('') + '</div>'
+    : '<div class="info-sub">' + esc(t('infoNoSources')) + '</div>');
+
+  return html;
+}
+
 function renderVisionResult(data){
+  lastMachineData = data;
   const out = document.getElementById('visionResult');
-  const exName = String(data.exercise || data.machine);
+
+  // The model is allowed to say the photo is not a machine. Believe it.
+  if(data.identified === false){
+    out.innerHTML = '<div class="vision-warn">' + esc(t('notAMachine')) +
+      (data.machine ? ' — ' + esc(data.machine) : '') + '</div>';
+    showQrPanel(false);
+    return;
+  }
+
   out.innerHTML =
     '<div class="vision-result">' +
       '<h4>' + esc(data.machine) + '</h4>' +
-      (data.muscle ? '<div><span class="tag muscle">' + esc(muscleLabel(data.muscle)) + '</span></div>' : '') +
-      (data.howTo ? '<p style="margin-top:8px; color:#9c9c9c;">' + esc(data.howTo) + '</p>' : '') +
-      (data.suggestion ? '<p style="margin-top:6px; color:#6f6f6f;">' + esc(data.suggestion) + '</p>' : '') +
-      '<button class="btn btn-accent" style="margin-top:10px;" onclick="addVisionExercise(' +
-        JSON.stringify(exName).replace(/"/g,'&quot;') + ',' +
-        JSON.stringify(String(data.muscle || 'other')).replace(/"/g,'&quot;') + ')">' +
+      (data.exercise && data.exercise !== data.machine
+        ? '<div class="info-sub">' + esc(data.exercise) + '</div>' : '') +
+      machineInfoHtml(data) +
+      '<button class="btn btn-accent" style="margin-top:12px;" onclick="addVisionExercise()">' +
         esc(t('visionAddBtn')) + '</button>' +
     '</div>';
+
+  // A QR scan is offered whenever the model is not sure, and stays available
+  // afterwards so the user can always overrule the photo with the sticker.
+  showQrPanel(!!data.needsQr || data.confidence !== 'high');
+  if(data.needsQr) setQrStatus(t('qrNeeded'), true);
+}
+
+/* ---- QR fallback -------------------------------------------------------
+   jsQR is ~250KB, so it is fetched only when a scan is actually requested —
+   never on first paint. The manual paste field is the fallback for both a
+   failed load and a camera the browser will not give us. */
+let qrScanHandle = null;
+let jsQrLoader = null;
+
+function loadJsQr(){
+  if(window.jsQR) return Promise.resolve(window.jsQR);
+  if(jsQrLoader) return jsQrLoader;
+  jsQrLoader = new Promise(function(resolve, reject){
+    const el = document.createElement('script');
+    el.src = 'vendor/jsqr.js';
+    el.onload = function(){ window.jsQR ? resolve(window.jsQR) : reject(new Error('no global')); };
+    el.onerror = function(){ jsQrLoader = null; reject(new Error('load failed')); };
+    document.head.appendChild(el);
+  });
+  return jsQrLoader;
+}
+
+function showQrPanel(show){
+  const p = document.getElementById('qrPanel');
+  if(p) p.style.display = show ? '' : 'none';
+  if(!show){ setQrStatus(''); showQrManual(false); }
+  updateQrScanBtn();
+}
+
+/* Label and action both follow the scan state, so the button never says
+   "scan" while it would stop, or the reverse after a language toggle. */
+function updateQrScanBtn(){
+  const b = document.getElementById('qrScanBtn');
+  if(!b) return;
+  b.textContent = qrScanHandle ? t('qrStopBtn') : t('qrScanBtn');
+  b.onclick = qrScanHandle ? stopQrScan : startQrScan;
+}
+function setQrStatus(msg, highlight){
+  const el = document.getElementById('qrStatus');
+  if(!el) return;
+  el.textContent = msg || '';
+  el.classList.toggle('on', !!highlight);
+}
+function showQrManual(show){
+  const row = document.getElementById('qrManualRow');
+  if(row) row.style.display = show ? '' : 'none';
+}
+function toggleQrManual(){
+  const row = document.getElementById('qrManualRow');
+  if(row) showQrManual(row.style.display === 'none');
+}
+
+async function startQrScan(){
+  let decoder;
+  try { decoder = await loadJsQr(); }
+  catch(e){ setQrStatus(t('qrUnsupported')); showQrManual(true); return; }
+
+  const v = document.getElementById('camVideo');
+  if(!camStream){
+    await startCamera();
+    if(!camStream){ setQrStatus(t('qrNoCamera')); showQrManual(true); return; }
+  }
+  v.style.display = '';
+  document.getElementById('camShot').style.display = 'none';
+  updateCamButtons('qr');
+  setQrStatus(t('qrScanning'), true);
+
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+  clearInterval(qrScanHandle);
+  qrScanHandle = setInterval(function(){
+    if(!v.videoWidth) return;
+    canvas.width = v.videoWidth;
+    canvas.height = v.videoHeight;
+    ctx.drawImage(v, 0, 0, canvas.width, canvas.height);
+    let found = null;
+    try {
+      const img = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      found = decoder(img.data, img.width, img.height);
+    } catch(e){ /* a frame we cannot read is not a failure — try the next one */ }
+    if(found && found.data) useQrUrl(found.data);
+  }, 350);
+  updateQrScanBtn();
+}
+
+function stopQrScan(){
+  clearInterval(qrScanHandle);
+  qrScanHandle = null;
+  updateQrScanBtn();
+  const v = document.getElementById('camVideo');
+  if(v) v.style.display = 'none';
+  stopCamStream();
+  // The machine photo is still the subject of the analysis; put it back.
+  if(capturedDataUrl){
+    const img = document.getElementById('camShot');
+    img.src = capturedDataUrl;
+    img.style.display = '';
+    updateCamButtons('shot');
+  } else {
+    updateCamButtons('idle');
+  }
+  setQrStatus('');
+}
+
+/* A scanned or pasted URL is evidence about the machine, so the photo is sent
+   again with it rather than being thrown away. */
+function useQrUrl(url){
+  const clean = safeUrl(url);
+  if(!clean){ setQrStatus(t('qrBadUrl')); return; }
+  stopQrScan();
+  pendingQrUrl = clean;
+  setQrStatus(t('qrFound'), true);
+  analyzePhoto();
+}
+
+function submitQrUrl(){
+  const input = document.getElementById('qrUrlInput');
+  if(!input) return;
+  useQrUrl(input.value.trim());
 }
 
 function addVisionExercise(name, muscle){
-  if(exercises.some(function(e){ return e.name.toLowerCase() === String(name).toLowerCase(); })){
+  const d = lastMachineData;
+  const exName = String((name !== undefined ? name : (d && (d.exercise || d.machine))) || '').trim();
+  if(!exName) return;
+  const exMuscle = muscle !== undefined ? muscle : (d && d.muscle);
+
+  if(exercises.some(function(e){ return e.name.toLowerCase() === exName.toLowerCase(); })){
     flashToast(t('exerciseAlreadyExistsToast'));
     closeCamera();
     return;
   }
-  exercises.push({
+
+  const ex = {
     id: 'e' + Date.now().toString(36),
-    name: name,
+    name: exName,
     tag: t('generalTag'),
-    muscle: MUSCLES.indexOf(muscle) !== -1 ? muscle : 'other',
+    muscle: MUSCLES.indexOf(exMuscle) !== -1 ? exMuscle : 'other',
     sets: '3', reps: '10', targetKg: 0, restSec: settings.defaultRestSec
-  });
+  };
+
+  /* The card is saved with the exercise, so the identification is paid for
+     once and stays available from the collection and mid-workout. */
+  if(d && (name === undefined || String(d.exercise || d.machine) === exName)){
+    ex.info = {
+      machine: d.machine || '', exercise: d.exercise || '',
+      brand: d.brand || '', model: d.model || '',
+      confidence: d.confidence || 'medium',
+      muscle: ex.muscle, secondaryMuscles: d.secondaryMuscles || [],
+      setup: d.setup || '', howTo: d.howTo || '',
+      mistakes: d.mistakes || [], suggestion: d.suggestion || '',
+      suggestedKg: num(d.suggestedKg), suggestionWhy: d.suggestionWhy || '',
+      sources: (d.sources || []).map(safeUrl).filter(Boolean),
+      scannedAt: new Date().toISOString()
+    };
+    if(num(d.suggestedKg) > 0) ex.targetKg = num(d.suggestedKg);
+  }
+
+  exercises.push(ex);
   saveKey('exercises', exercises);
   renderExercises();
   renderHero();
   renderTemplateExPicker();
+  renderSession();
   closeCamera();
   flashToast(t('exerciseSavedToast'));
+}
+
+/* The saved card, reopened from the exercise collection or mid-workout. */
+function openExerciseInfo(exId){
+  const ex = exercises.find(function(e){ return e.id === exId; });
+  const modal = document.getElementById('machineInfoModal');
+  if(!ex || !modal) return;
+  document.getElementById('machineInfoTitle').textContent = ex.info && ex.info.machine ? ex.info.machine : ex.name;
+  document.getElementById('machineInfoBody').innerHTML = ex.info
+    ? machineInfoHtml(ex.info)
+    : '<div class="info-sub">' + esc(t('infoNone')) + '</div>';
+  modal.classList.add('show');
+}
+function closeExerciseInfo(){
+  const m = document.getElementById('machineInfoModal');
+  if(m) m.classList.remove('show');
 }
 
 /* Food photo → estimated macros. The meal model only ever stored
@@ -2372,11 +2704,11 @@ document.addEventListener('input', function(e){
 document.addEventListener('keydown', function(e){
   if(e.key !== 'Escape') return;
   closeSidebar();
-  ['profileModal','plateModal','camModal','sessionExModal'].forEach(function(id){
+  ['profileModal','plateModal','camModal','sessionExModal','machineInfoModal'].forEach(function(id){
     const m = document.getElementById(id);
     if(m && m.classList.contains('show')){
       m.classList.remove('show');
-      if(id === 'camModal') stopCamStream();
+      if(id === 'camModal'){ clearInterval(qrScanHandle); qrScanHandle = null; stopCamStream(); }
     }
   });
 });
