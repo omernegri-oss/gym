@@ -151,6 +151,7 @@ body { font-family: Heebo, Arial, sans-serif; background: #161616; }
 .session-ex.done { border-color: rgba(215,255,43,0.4); }
 .session-ex-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; margin-bottom: 8px; }
 .session-ex-name { font-size: 13px; font-weight: 700; }
+.session-ex-plan { font-size: 10px; color: #9c9c9c; margin-top: 3px; line-height: 1.5; }
 .session-ex-last { font-size: 10px; color: #6f6f6f; margin-top: 3px; line-height: 1.5; }
 .session-ex-last b { color: #3fd7e8; font-weight: 600; }
 .set-row { display: grid; grid-template-columns: 26px 1fr 1fr 34px 32px; gap: 6px; align-items: center; margin-bottom: 6px; }

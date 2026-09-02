@@ -185,7 +185,7 @@ const translations = {
     editPlanBtn: 'ערוך תוכנית', startNowBtn: 'התחל עכשיו ▶',
     nutritionGoalTitle: '🎯 היעד התזונתי שלך היום',
     sleepTitle: 'שעות שינה', sleepUnit: 'שעות', stepsTitle: 'צעדים', weeklyProgressTitle: 'התקדמות שבועית',
-    bodyWeightTitle: 'משקל גוף', restHrTitle: 'דופק מנוחה', kgUnit: 'ק״ג', bpmUnit: 'פעימות',
+    bodyWeightTitle: 'משקל גוף', restHrTitle: 'דופק מנוחה', kgUnit: 'ק״ג', bpmUnit: 'פעימות', secUnit: 'שנ׳',
     dayMetricsTitle: 'מדדים יומיים', todayLabel: 'היום', yesterdayLabel: 'אתמול',
     metricsSavedToast: 'המדד נשמר',
     bodyWeightSyncedToast: 'משקל הגוף עודכן והיעדים חושבו מחדש',
@@ -318,7 +318,7 @@ const translations = {
     editPlanBtn: 'Edit plan', startNowBtn: 'Start Now ▶',
     nutritionGoalTitle: "🎯 Today's Nutrition Goal",
     sleepTitle: 'Sleep', sleepUnit: 'hrs', stepsTitle: 'Steps', weeklyProgressTitle: 'Weekly Progress',
-    bodyWeightTitle: 'Body weight', restHrTitle: 'Resting HR', kgUnit: 'kg', bpmUnit: 'bpm',
+    bodyWeightTitle: 'Body weight', restHrTitle: 'Resting HR', kgUnit: 'kg', bpmUnit: 'bpm', secUnit: 'sec',
     dayMetricsTitle: 'Daily metrics', todayLabel: 'Today', yesterdayLabel: 'Yesterday',
     metricsSavedToast: 'Saved',
     bodyWeightSyncedToast: 'Body weight updated — goals recalculated',
@@ -1279,6 +1279,21 @@ function renderSession(){
     const allDone = it.sets.length > 0 && it.sets.every(function(s){ return s.done; });
     const prev = bestE1RM(it.name);
 
+    /* What the program asked for, next to what is actually being logged.
+       Seeding starts an exercise with a single set row, so "3 sets × 10"
+       beside one row is the point rather than a redundancy. An exercise
+       created inside this workout has no program entry (exId null) and just
+       shows fewer parts. */
+    const planned = it.exId ? exercises.find(function(e){ return e.id === it.exId; }) : null;
+    const planBits = [];
+    if(planned){
+      planBits.push(esc(planned.sets) + ' ' + esc(t('setsUnit')) + ' × ' + esc(planned.reps));
+      if(num(planned.targetKg) > 0) planBits.push(num(planned.targetKg) + ' ' + esc(t('kgUnit')));
+    }
+    planBits.push('⏱ ' + (num(it.restSec) || settings.defaultRestSec) + ' ' + esc(t('secUnit')));
+    planBits.push('✓ ' + it.sets.filter(function(s){ return s.done; }).length + '/' + it.sets.length);
+    if(prev > 0) planBits.push(esc(t('e1rmLabel')) + ': ' + prev.toFixed(1) + ' ' + esc(t('kgUnit')));
+
     const rows = it.sets.map(function(s, si){
       const isPR = prev > 0 && e1rm(num(s.kg), num(s.reps)) > prev;
       return '<div class="set-row">' +
@@ -1296,6 +1311,7 @@ function renderSession(){
       '<div class="session-ex-head">' +
         '<div style="min-width:0;">' +
           '<div class="session-ex-name">' + esc(it.name) + '</div>' +
+          '<div class="session-ex-plan">' + planBits.join(' · ') + '</div>' +
           '<div class="session-ex-last">' + lastHtml + '</div>' +
         '</div>' +
         '<div class="card-actions">' +
