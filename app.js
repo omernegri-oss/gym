@@ -216,6 +216,7 @@ const translations = {
     savedToastDefault: 'נשמר',
     mealSavedToast: 'הארוחה נוספה ונשמרה', mealNameAlert: 'נא להזין שם ארוחה',
     exerciseSavedToast: 'התרגיל נוסף ונשמר', exerciseNameAlert: 'נא להזין שם תרגיל',
+    exerciseAlreadyExistsToast: 'התרגיל כבר קיים באוסף',
     metricsUpdatedToast: 'המדדים עודכנו ויעדים חושבו מחדש',
     editAction: 'עריכה', deleteAction: 'מחיקה', saveChangesBtn: 'שמור שינויים',
     mealUpdatedToast: 'הארוחה עודכנה', mealDeletedToast: 'הארוחה נמחקה',
@@ -241,6 +242,7 @@ const translations = {
     saveTemplateBtn: 'שמור תבנית', addTemplateBtn: '＋ תבנית חדשה',
     templatesEmpty: 'אין תבניות. צרו תבנית כדי להתחיל אימון בלחיצה אחת.',
     startFromTemplate: 'התחל', templateSavedToast: 'התבנית נשמרה', templateDeletedToast: 'התבנית נמחקה',
+    switchToProfileBtn: 'החלף',
     templateNameAlert: 'נא להזין שם תבנית', templateExAlert: 'נא לבחור לפחות תרגיל אחד',
     templateStartedToast: 'האימון התחיל מתבנית',
     /* progress */
@@ -343,6 +345,7 @@ const translations = {
     savedToastDefault: 'Saved',
     mealSavedToast: 'Meal added and saved', mealNameAlert: 'Please enter a meal name',
     exerciseSavedToast: 'Exercise added and saved', exerciseNameAlert: 'Please enter an exercise name',
+    exerciseAlreadyExistsToast: 'This exercise is already in your collection',
     metricsUpdatedToast: 'Metrics updated and goals recalculated',
     editAction: 'Edit', deleteAction: 'Delete', saveChangesBtn: 'Save changes',
     mealUpdatedToast: 'Meal updated', mealDeletedToast: 'Meal deleted',
@@ -365,6 +368,7 @@ const translations = {
     saveTemplateBtn: 'Save template', addTemplateBtn: '＋ New template',
     templatesEmpty: 'No templates yet. Create one to start a workout in a single tap.',
     startFromTemplate: 'Start', templateSavedToast: 'Template saved', templateDeletedToast: 'Template deleted',
+    switchToProfileBtn: 'Switch',
     templateNameAlert: 'Please enter a template name', templateExAlert: 'Pick at least one exercise',
     templateStartedToast: 'Workout started from template',
     progressTitle: 'Progress', pickExercise: 'Pick an exercise', volumeTitle: 'Weekly volume by muscle group',
@@ -495,7 +499,7 @@ function renderProfileList(){
       '<div class="profile-nm">' + esc(p.name) +
         '<div class="profile-meta">' + profileWorkoutCount(p.id) + ' ' + esc(t('workoutsCount')) + '</div></div>' +
       (p.id === activeProfileId ? '<span class="badge">✓</span>' :
-        '<button class="btn btn-sm" onclick="switchProfile(\'' + esc(p.id) + '\')">' + esc(t('startFromTemplate')) + '</button>') +
+        '<button class="btn btn-sm" onclick="switchProfile(\'' + esc(p.id) + '\')">' + esc(t('switchToProfileBtn')) + '</button>') +
       (profiles.length > 1 ? '<button class="icon-action danger" onclick="deleteProfile(\'' + esc(p.id) + '\')" aria-label="' + esc(t('deleteAction')) + '">🗑</button>' : '') +
     '</div>';
   }).join('');
@@ -1889,6 +1893,15 @@ function openCamera(mode){
     visionMode === 'food' ? t('cameraTitleFood') : t('cameraTitle');
   document.getElementById('camHint').textContent =
     visionMode === 'food' ? t('cameraHintFood') : t('cameraHint');
+  // Full visual reset: startCamera()/shootPhoto() leave the video/photo/hint
+  // display styles set from the *previous* capture. Without resetting them
+  // here, reopening the modal for a new photo showed the old photo still on
+  // screen (and the hint never came back at all) instead of a clean start.
+  const camShot = document.getElementById('camShot');
+  camShot.style.display = 'none';
+  camShot.src = '';
+  document.getElementById('camVideo').style.display = 'none';
+  document.getElementById('camHint').style.display = '';
   document.getElementById('camModal').classList.add('show');
   updateCamButtons('idle');
 }
@@ -2013,7 +2026,7 @@ function renderVisionResult(data){
 
 function addVisionExercise(name, muscle){
   if(exercises.some(function(e){ return e.name.toLowerCase() === String(name).toLowerCase(); })){
-    flashToast(t('exerciseUpdatedToast'));
+    flashToast(t('exerciseAlreadyExistsToast'));
     closeCamera();
     return;
   }
@@ -2097,7 +2110,10 @@ function calcPlates(){
 
   const out = document.getElementById('plateResult');
   const perSide = (target - bar) / 2;
-  if(!target || perSide <= 0){ out.innerHTML = '<div class="plate-empty">—</div>'; return; }
+  // perSide === 0 (target weight equals the bar) is a valid, loadable answer —
+  // zero plates — not the same as no/impossible input; only a genuinely
+  // negative per-side load falls back to the empty state.
+  if(!target || perSide < 0){ out.innerHTML = '<div class="plate-empty">—</div>'; return; }
 
   let left = perSide;
   const used = [];
