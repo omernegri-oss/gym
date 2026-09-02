@@ -49,6 +49,12 @@ function esc(v){
 }
 function num(v, d){ const n = Number(v); return Number.isFinite(n) ? n : (d || 0); }
 
+/* Whole number >= 1; blank, zero or negative falls back to `dflt`. */
+function posInt(v, dflt){
+  const n = Math.round(num(v));
+  return n >= 1 ? n : dflt;
+}
+
 const MEAL_TAG_EMOJI = { breakfast:'\u{1F373}', lunch:'\u{1F37D}\u{FE0F}', dinner:'\u{1F319}', snack:'\u{1F34E}' };
 const MUSCLES = ['chest','back','legs','shoulders','arms','core','cardio','other'];
 const MUSCLE_KEY = { chest:'muscleChest', back:'muscleBack', legs:'muscleLegs', shoulders:'muscleShoulders',
@@ -210,6 +216,7 @@ const translations = {
     savedToastDefault: 'נשמר',
     mealSavedToast: 'הארוחה נוספה ונשמרה', mealNameAlert: 'נא להזין שם ארוחה',
     exerciseSavedToast: 'התרגיל נוסף ונשמר', exerciseNameAlert: 'נא להזין שם תרגיל',
+    exerciseAlreadyExistsToast: 'התרגיל כבר קיים באוסף',
     metricsUpdatedToast: 'המדדים עודכנו ויעדים חושבו מחדש',
     editAction: 'עריכה', deleteAction: 'מחיקה', saveChangesBtn: 'שמור שינויים',
     mealUpdatedToast: 'הארוחה עודכנה', mealDeletedToast: 'הארוחה נמחקה',
@@ -235,6 +242,7 @@ const translations = {
     saveTemplateBtn: 'שמור תבנית', addTemplateBtn: '＋ תבנית חדשה',
     templatesEmpty: 'אין תבניות. צרו תבנית כדי להתחיל אימון בלחיצה אחת.',
     startFromTemplate: 'התחל', templateSavedToast: 'התבנית נשמרה', templateDeletedToast: 'התבנית נמחקה',
+    switchToProfileBtn: 'החלף',
     templateNameAlert: 'נא להזין שם תבנית', templateExAlert: 'נא לבחור לפחות תרגיל אחד',
     templateStartedToast: 'האימון התחיל מתבנית',
     /* progress */
@@ -254,6 +262,13 @@ const translations = {
     visionNotConfigured: 'זיהוי המכשירים אינו מוגדר בשרת. צריך להוסיף ANTHROPIC_API_KEY ל-Vercel כדי להפעיל את הפיצ׳ר. עד אז אפשר להוסיף את התרגיל ידנית.',
     visionFailed: 'הניתוח נכשל. נסו שוב או הוסיפו את התרגיל ידנית.',
     visionAddBtn: '＋ הוסף לתוכנית',
+    /* vision: food */
+    captureFood: '📷 צלם אוכל', cameraTitleFood: 'זיהוי ארוחה',
+    cameraHintFood: 'כוונו את המצלמה לצלחת וצלמו',
+    visionNotConfiguredFood: 'זיהוי המזון אינו מוגדר בשרת. צריך להוסיף ANTHROPIC_API_KEY ל-Vercel כדי להפעיל את הפיצ׳ר. עד אז אפשר להוסיף את הארוחה ידנית.',
+    visionFailedFood: 'הניתוח נכשל. נסו שוב או הוסיפו את הארוחה ידנית.',
+    visionUseBtn: '✓ מלא בטופס',
+    mealFilledFromPhotoToast: 'הנתונים מולאו מהתמונה — בדקו ושמרו',
     /* profiles */
     profilesTitle: 'פרופילים', profileSwitchBtn: '👤 החלף פרופיל', newProfileBtn: '＋ פרופיל חדש',
     profileNamePlaceholder: 'שם הפרופיל', profileCreatedToast: 'הפרופיל נוצר',
@@ -330,6 +345,7 @@ const translations = {
     savedToastDefault: 'Saved',
     mealSavedToast: 'Meal added and saved', mealNameAlert: 'Please enter a meal name',
     exerciseSavedToast: 'Exercise added and saved', exerciseNameAlert: 'Please enter an exercise name',
+    exerciseAlreadyExistsToast: 'This exercise is already in your collection',
     metricsUpdatedToast: 'Metrics updated and goals recalculated',
     editAction: 'Edit', deleteAction: 'Delete', saveChangesBtn: 'Save changes',
     mealUpdatedToast: 'Meal updated', mealDeletedToast: 'Meal deleted',
@@ -352,6 +368,7 @@ const translations = {
     saveTemplateBtn: 'Save template', addTemplateBtn: '＋ New template',
     templatesEmpty: 'No templates yet. Create one to start a workout in a single tap.',
     startFromTemplate: 'Start', templateSavedToast: 'Template saved', templateDeletedToast: 'Template deleted',
+    switchToProfileBtn: 'Switch',
     templateNameAlert: 'Please enter a template name', templateExAlert: 'Pick at least one exercise',
     templateStartedToast: 'Workout started from template',
     progressTitle: 'Progress', pickExercise: 'Pick an exercise', volumeTitle: 'Weekly volume by muscle group',
@@ -368,6 +385,12 @@ const translations = {
     visionNotConfigured: 'Machine recognition is not configured on the server. Add ANTHROPIC_API_KEY in Vercel to enable it. Until then you can add the exercise manually.',
     visionFailed: 'Analysis failed. Try again or add the exercise manually.',
     visionAddBtn: '＋ Add to program',
+    captureFood: '📷 Capture food', cameraTitleFood: 'Food recognition',
+    cameraHintFood: 'Point the camera at your plate and capture',
+    visionNotConfiguredFood: 'Food recognition is not configured on the server. Add ANTHROPIC_API_KEY in Vercel to enable it. Until then you can add the meal manually.',
+    visionFailedFood: 'Analysis failed. Try again or add the meal manually.',
+    visionUseBtn: '✓ Fill in the form',
+    mealFilledFromPhotoToast: 'Filled in from the photo — review and save',
     profilesTitle: 'Profiles', profileSwitchBtn: '👤 Switch profile', newProfileBtn: '＋ New profile',
     profileNamePlaceholder: 'Profile name', profileCreatedToast: 'Profile created',
     profileSwitchedToast: 'Profile switched', profileDeleteConfirm: 'Delete this profile and all its data?',
@@ -438,6 +461,7 @@ function applyLanguage(lang){
   updateWorkoutButtons();
   updateRestUI();
   updateFormLabels();
+  refreshCameraModalText();
   const g = document.getElementById('greetingText');
   if(g) g.textContent = user ? translations[currentLang].greeting(user.name) : t('greetingDefault');
 }
@@ -475,7 +499,7 @@ function renderProfileList(){
       '<div class="profile-nm">' + esc(p.name) +
         '<div class="profile-meta">' + profileWorkoutCount(p.id) + ' ' + esc(t('workoutsCount')) + '</div></div>' +
       (p.id === activeProfileId ? '<span class="badge">✓</span>' :
-        '<button class="btn btn-sm" onclick="switchProfile(\'' + esc(p.id) + '\')">' + esc(t('startFromTemplate')) + '</button>') +
+        '<button class="btn btn-sm" onclick="switchProfile(\'' + esc(p.id) + '\')">' + esc(t('switchToProfileBtn')) + '</button>') +
       (profiles.length > 1 ? '<button class="icon-action danger" onclick="deleteProfile(\'' + esc(p.id) + '\')" aria-label="' + esc(t('deleteAction')) + '">🗑</button>' : '') +
     '</div>';
   }).join('');
@@ -881,14 +905,17 @@ function toggleExerciseForm(show){
 function saveExercise(){
   const name = document.getElementById('exName').value.trim();
   if(!name){ flashToast(t('exerciseNameAlert')); return; }
+  /* sets/reps used to be stored as the raw input string, so "-5" went straight
+     into the record. Everything numeric here is clamped to a sane floor: a
+     negative set count, rep count, load or rest interval is never meaningful. */
   const payload = {
     name: name,
     tag: document.getElementById('exTag').value.trim() || t('generalTag'),
     muscle: document.getElementById('exMuscle').value || 'other',
-    sets: document.getElementById('exSets').value || '3',
-    reps: document.getElementById('exReps').value || '10',
-    targetKg: num(document.getElementById('exKg').value),
-    restSec: num(document.getElementById('exRest').value) || settings.defaultRestSec
+    sets: String(posInt(document.getElementById('exSets').value, 3)),
+    reps: String(posInt(document.getElementById('exReps').value, 10)),
+    targetKg: Math.max(0, num(document.getElementById('exKg').value)),
+    restSec: posInt(document.getElementById('exRest').value, settings.defaultRestSec)
   };
   const isEdit = editingExerciseIndex !== null;
   if(isEdit){
@@ -1763,9 +1790,12 @@ function saveMeal(){
   const payload = {
     name: name,
     tag: document.getElementById('mealTag').value,
-    cal: num(document.getElementById('mealCal').value),
-    protein: num(document.getElementById('mealProtein').value),
-    carbs: num(document.getElementById('mealCarbs').value)
+    // Clamped for the same reason the exercise fields are: the global
+    // keydown/input guard stops "-" from being typed, but a value that
+    // arrives programmatically (paste, autofill) bypasses it.
+    cal: Math.max(0, num(document.getElementById('mealCal').value)),
+    protein: Math.max(0, num(document.getElementById('mealProtein').value)),
+    carbs: Math.max(0, num(document.getElementById('mealCarbs').value))
   };
   const isEdit = editingMealIndex !== null;
   if(isEdit) meals[editingMealIndex] = payload; else meals.push(payload);
@@ -1850,15 +1880,42 @@ function renderNutritionSummary(){
   document.getElementById('sumFatBar').style.width = Math.min(100, totalFat/g.fats*100) + '%';
 }
 
-/* ---------- 15. machine vision ---------- */
+/* ---------- 15. camera vision — shared capture UI, two analysis targets ---------- */
 let camStream = null;
 let capturedDataUrl = null;
+let visionMode = 'machine';   // 'machine' | 'food' — which endpoint/renderer analyzePhoto() uses
 
-function openCamera(){
+function openCamera(mode){
+  visionMode = mode === 'food' ? 'food' : 'machine';
   capturedDataUrl = null;
   document.getElementById('visionResult').innerHTML = '';
+  document.getElementById('camModalTitle').textContent =
+    visionMode === 'food' ? t('cameraTitleFood') : t('cameraTitle');
+  document.getElementById('camHint').textContent =
+    visionMode === 'food' ? t('cameraHintFood') : t('cameraHint');
+  // Full visual reset: startCamera()/shootPhoto() leave the video/photo/hint
+  // display styles set from the *previous* capture. Without resetting them
+  // here, reopening the modal for a new photo showed the old photo still on
+  // screen (and the hint never came back at all) instead of a clean start.
+  const camShot = document.getElementById('camShot');
+  camShot.style.display = 'none';
+  camShot.src = '';
+  document.getElementById('camVideo').style.display = 'none';
+  document.getElementById('camHint').style.display = '';
   document.getElementById('camModal').classList.add('show');
   updateCamButtons('idle');
+}
+
+/* The title/hint above are JS-managed (not data-i18n) because they depend on
+   visionMode, not just language. Re-apply them on a language toggle so a
+   still-open modal doesn't show stale-language text. */
+function refreshCameraModalText(){
+  const modal = document.getElementById('camModal');
+  if(!modal || !modal.classList.contains('show')) return;
+  document.getElementById('camModalTitle').textContent =
+    visionMode === 'food' ? t('cameraTitleFood') : t('cameraTitle');
+  document.getElementById('camHint').textContent =
+    visionMode === 'food' ? t('cameraHintFood') : t('cameraHint');
 }
 function closeCamera(){
   stopCamStream();
@@ -1918,29 +1975,36 @@ function retakePhoto(){
 
 /* Posts the photo to our own serverless endpoint. The API key lives on the
    server — never in this bundle. If the endpoint is absent or unconfigured we
-   say so plainly rather than inventing a result. */
+   say so plainly rather than inventing a result. Which endpoint, which
+   payload key marks success, and which renderer runs all follow visionMode —
+   set once in openCamera() — so the capture/shutter/retake flow above is
+   shared between the two analysis targets without duplication. */
 async function analyzePhoto(){
   if(!capturedDataUrl) return;
   const out = document.getElementById('visionResult');
   out.innerHTML = '<div class="chart-empty">' + esc(t('cameraAnalyzing')) + '</div>';
+  const isFood = visionMode === 'food';
+  const endpoint = isFood ? '/api/analyze-food' : '/api/analyze-machine';
+  const notConfiguredKey = isFood ? 'visionNotConfiguredFood' : 'visionNotConfigured';
+  const failedKey = isFood ? 'visionFailedFood' : 'visionFailed';
   try {
-    const res = await fetch('/api/analyze-machine', {
+    const res = await fetch(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ image: capturedDataUrl, lang: currentLang })
     });
     // 501 = key not set; 404/405 = deployed without a serverless runtime at all.
     if(res.status === 501 || res.status === 404 || res.status === 405){
-      out.innerHTML = '<div class="vision-warn">' + esc(t('visionNotConfigured')) + '</div>';
+      out.innerHTML = '<div class="vision-warn">' + esc(t(notConfiguredKey)) + '</div>';
       return;
     }
     if(!res.ok) throw new Error('http ' + res.status);
     const data = await res.json();
-    if(!data || !data.machine) throw new Error('bad payload');
-    renderVisionResult(data);
+    if(!data || (isFood ? !data.food : !data.machine)) throw new Error('bad payload');
+    if(isFood) renderFoodResult(data); else renderVisionResult(data);
   } catch(e){
     // Anything else is a real failure — say that, don't blame configuration.
-    out.innerHTML = '<div class="vision-warn">' + esc(t('visionFailed')) + '</div>';
+    out.innerHTML = '<div class="vision-warn">' + esc(t(failedKey)) + '</div>';
   }
 }
 
@@ -1962,7 +2026,7 @@ function renderVisionResult(data){
 
 function addVisionExercise(name, muscle){
   if(exercises.some(function(e){ return e.name.toLowerCase() === String(name).toLowerCase(); })){
-    flashToast(t('exerciseUpdatedToast'));
+    flashToast(t('exerciseAlreadyExistsToast'));
     closeCamera();
     return;
   }
@@ -1979,6 +2043,52 @@ function addVisionExercise(name, muscle){
   renderTemplateExPicker();
   closeCamera();
   flashToast(t('exerciseSavedToast'));
+}
+
+/* Food photo → estimated macros. The meal model only ever stored
+   {name, tag, cal, protein, carbs} — manual entry has no fat field either,
+   the daily summary derives fat from calories. Rather than widen that model
+   for one entry path, show all four macros here for the user's benefit and
+   push only the three that manual entry already saves; behaviour and storage
+   stay identical to typing the same numbers in by hand. */
+function renderFoodResult(data){
+  const out = document.getElementById('visionResult');
+  const cal = Math.max(0, num(data.calories));
+  const protein = Math.max(0, num(data.protein));
+  const carbs = Math.max(0, num(data.carbs));
+  const fats = Math.max(0, num(data.fats));
+  const tag = MEAL_TAG_KEYS[data.tag] ? data.tag : 'lunch';
+  out.innerHTML =
+    '<div class="vision-result">' +
+      '<h4>' + esc(data.food) + '</h4>' +
+      '<div class="grid-4" style="margin-top:10px;">' +
+        tile(cal, t('calUnitLabel'), '#d7ff2b') +
+        tile(protein + t('gramUnit'), t('macroProtein'), '#3fd7e8') +
+        tile(carbs + t('gramUnit'), t('macroCarbs'), '#e0c93f') +
+        tile(fats + t('gramUnit'), t('macroFats'), '#ff9500') +
+      '</div>' +
+      (data.notes ? '<p style="margin-top:10px; color:#9c9c9c; font-size:11px; line-height:1.5;">' + esc(data.notes) + '</p>' : '') +
+      '<button class="btn btn-accent" style="margin-top:10px;" onclick="fillMealFromVision(' +
+        JSON.stringify(String(data.food)).replace(/"/g,'&quot;') + ',' +
+        JSON.stringify(tag).replace(/"/g,'&quot;') + ',' + cal + ',' + protein + ',' + carbs +
+      ')">' + esc(t('visionUseBtn')) + '</button>' +
+    '</div>';
+}
+
+function fillMealFromVision(name, tag, cal, protein, carbs){
+  closeCamera();
+  switchScreen('nutrition');
+  editingMealIndex = null;
+  toggleMealForm(true);
+  document.getElementById('mealName').value = name;
+  document.getElementById('mealTag').value = MEAL_TAG_KEYS[tag] ? tag : 'lunch';
+  document.getElementById('mealCal').value = Math.max(0, num(cal));
+  document.getElementById('mealProtein').value = Math.max(0, num(protein));
+  document.getElementById('mealCarbs').value = Math.max(0, num(carbs));
+  updateFormLabels();
+  const f = document.getElementById('mealForm');
+  f.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  flashToast(t('mealFilledFromPhotoToast'));
 }
 
 /* ---------- 16. plate calculator ---------- */
@@ -2000,7 +2110,10 @@ function calcPlates(){
 
   const out = document.getElementById('plateResult');
   const perSide = (target - bar) / 2;
-  if(!target || perSide <= 0){ out.innerHTML = '<div class="plate-empty">—</div>'; return; }
+  // perSide === 0 (target weight equals the bar) is a valid, loadable answer —
+  // zero plates — not the same as no/impossible input; only a genuinely
+  // negative per-side load falls back to the empty state.
+  if(!target || perSide < 0){ out.innerHTML = '<div class="plate-empty">—</div>'; return; }
 
   let left = perSide;
   const used = [];
@@ -2091,6 +2204,30 @@ function flashToast(msg){
 }
 
 /* ---------- 18. boot ---------- */
+/* No figure in this app is ever meaningfully negative — not sets, reps, load,
+   rest, sleep, steps, body weight or calories. type="number" does not stop a
+   "-" being typed (min/max are only enforced on <form> submit, and none of
+   these inputs live in a form), so block the sign at the keyboard and strip it
+   from anything pasted or spun in. Delegated, so it covers the set rows that
+   are rendered during a workout. */
+const SIGN_KEYS = ['-', '+', 'e', 'E'];
+document.addEventListener('keydown', function(e){
+  const el = e.target;
+  if(!el || el.type !== 'number') return;
+  if(e.ctrlKey || e.metaKey || e.altKey) return;   // leave Ctrl/Cmd+- (zoom) alone
+  if(SIGN_KEYS.indexOf(e.key) !== -1) e.preventDefault();
+}, true);
+
+document.addEventListener('input', function(e){
+  const el = e.target;
+  if(!el || el.type !== 'number') return;
+  if(el.value.indexOf('-') === -1) return;
+  const cleaned = el.value.replace(/-/g, '');
+  el.value = cleaned;
+  // Re-run the field's own handler so state matches what is now displayed.
+  el.dispatchEvent(new Event('change', { bubbles: true }));
+}, true);
+
 document.addEventListener('keydown', function(e){
   if(e.key !== 'Escape') return;
   closeSidebar();

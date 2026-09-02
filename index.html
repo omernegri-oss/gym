@@ -257,7 +257,7 @@
       <div class="card" id="sessionCard" style="display:none;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
           <div class="card-title" style="margin:0;" data-i18n="sessionTitle">תרגילי האימון</div>
-          <button class="btn btn-sm" onclick="openCamera()" data-i18n="captureImage">📷 צלם מכשיר</button>
+          <button class="btn btn-sm" onclick="openCamera('machine')" data-i18n="captureImage">📷 צלם מכשיר</button>
         </div>
         <div id="sessionExercises"></div>
         <button class="btn" style="width:100%; margin-top:10px;" onclick="openAddToSession()" data-i18n="addToSessionBtn">＋ הוסף תרגיל לאימון</button>
@@ -308,7 +308,10 @@
           </div>
 
           <div class="card">
-            <div class="card-title" data-i18n="exercisesTitle">תרגילים</div>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+              <div class="card-title" style="margin:0;" data-i18n="exercisesTitle">תרגילים</div>
+              <button class="btn btn-sm" onclick="openCamera('machine')" data-i18n="captureImage">📷 צלם מכשיר</button>
+            </div>
             <div id="exercisesGrid" class="ex-grid"></div>
 
             <div class="add-form" id="exerciseForm">
@@ -317,12 +320,12 @@
                 <select class="form-input" id="exMuscle" aria-label="muscle"></select>
               </div>
               <div class="form-row-3">
-                <input class="form-input" id="exSets" placeholder="סטים" type="number" data-i18n-placeholder="exSetsPlaceholder">
-                <input class="form-input" id="exReps" placeholder="חזרות" type="number" data-i18n-placeholder="exRepsPlaceholder">
-                <input class="form-input" id="exKg" placeholder="משקל" type="number" step="0.5" data-i18n-placeholder="exKgPlaceholder">
+                <input class="form-input" id="exSets" placeholder="סטים" type="number" min="1" step="1" inputmode="numeric" data-i18n-placeholder="exSetsPlaceholder">
+                <input class="form-input" id="exReps" placeholder="חזרות" type="number" min="1" step="1" inputmode="numeric" data-i18n-placeholder="exRepsPlaceholder">
+                <input class="form-input" id="exKg" placeholder="משקל" type="number" min="0" step="0.5" inputmode="decimal" data-i18n-placeholder="exKgPlaceholder">
               </div>
               <div class="form-row">
-                <input class="form-input" id="exRest" placeholder="מנוחה (שנ׳)" type="number" data-i18n-placeholder="exRestPlaceholder">
+                <input class="form-input" id="exRest" placeholder="מנוחה (שנ׳)" type="number" min="0" step="5" inputmode="numeric" data-i18n-placeholder="exRestPlaceholder">
                 <input class="form-input" id="exTag" placeholder="תגית" data-i18n-placeholder="exTagPlaceholder">
               </div>
               <div class="form-actions">
@@ -461,16 +464,19 @@
               </select>
             </div>
             <div class="form-row-3">
-              <input class="form-input" id="mealCal" placeholder="קלוריות" type="number" data-i18n-placeholder="mealCalPlaceholder">
-              <input class="form-input" id="mealProtein" placeholder="חלבון" type="number" data-i18n-placeholder="mealProteinPlaceholder">
-              <input class="form-input" id="mealCarbs" placeholder="פחמימות" type="number" data-i18n-placeholder="mealCarbsPlaceholder">
+              <input class="form-input" id="mealCal" placeholder="קלוריות" type="number" min="0" inputmode="numeric" data-i18n-placeholder="mealCalPlaceholder">
+              <input class="form-input" id="mealProtein" placeholder="חלבון" type="number" min="0" step="0.5" inputmode="decimal" data-i18n-placeholder="mealProteinPlaceholder">
+              <input class="form-input" id="mealCarbs" placeholder="פחמימות" type="number" min="0" step="0.5" inputmode="decimal" data-i18n-placeholder="mealCarbsPlaceholder">
             </div>
             <div class="form-actions">
               <button class="form-save" id="mealSaveBtn" onclick="saveMeal()">שמור ארוחה</button>
               <button class="form-cancel" onclick="toggleMealForm(false)" data-i18n="cancelBtn">ביטול</button>
             </div>
           </div>
-          <button class="btn" style="width: 100%; margin-top: 12px;" onclick="toggleMealForm(true)" data-i18n="addMealBtn">＋ הוסף ארוחה</button>
+          <div class="btn-group" style="margin-top: 12px;">
+            <button class="btn" onclick="toggleMealForm(true)" data-i18n="addMealBtn">＋ הוסף ארוחה</button>
+            <button class="btn btn-accent" onclick="openCamera('food')" data-i18n="captureFood">📷 צלם אוכל</button>
+          </div>
         </div>
 
         <div class="card">
@@ -555,11 +561,13 @@
 
 <div class="modal-backdrop" id="camModal" onclick="if(event.target===this)closeCamera()">
   <div class="modal">
-    <div class="modal-title" data-i18n="cameraTitle">זיהוי מכשיר</div>
+    <!-- Title and hint are JS-managed (openCamera/refreshCameraModalText), not
+         data-i18n: their text depends on visionMode as well as language. -->
+    <div class="modal-title" id="camModalTitle">זיהוי מכשיר</div>
     <div class="cam-wrap">
       <video id="camVideo" playsinline muted style="display:none;"></video>
       <img id="camShot" alt="" style="display:none;">
-      <div class="cam-hint" id="camHint" data-i18n="cameraHint">כוונו את המצלמה למכשיר וצלמו</div>
+      <div class="cam-hint" id="camHint">כוונו את המצלמה למכשיר וצלמו</div>
     </div>
     <div class="btn-group">
       <button class="btn btn-accent" id="camStartBtn" onclick="startCamera()" data-i18n="cameraStart">הפעל מצלמה</button>
