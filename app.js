@@ -55,6 +55,16 @@ function posInt(v, dflt){
   return n >= 1 ? n : dflt;
 }
 
+/* Stored data is only as trustworthy as the last thing that wrote it — an
+   imported backup, a hand-edited localStorage entry, a half-finished write.
+   A value of the wrong *type* used to reach code that assumed an array and
+   took the whole app down on every load, so shape is checked at the door. */
+function arrOr(v, dflt){ return Array.isArray(v) ? v : dflt; }
+function objOr(v, dflt){ return (v && typeof v === 'object' && !Array.isArray(v)) ? v : dflt; }
+function daysOr(v){
+  return (Array.isArray(v) && v.length === 7) ? v.map(Boolean) : [false,false,false,false,false,false,false];
+}
+
 const MEAL_TAG_EMOJI = { breakfast:'\u{1F373}', lunch:'\u{1F37D}\u{FE0F}', dinner:'\u{1F319}', snack:'\u{1F34E}' };
 const MUSCLES = ['chest','back','legs','shoulders','arms','core','cardio','other'];
 const MUSCLE_KEY = { chest:'muscleChest', back:'muscleBack', legs:'muscleLegs', shoulders:'muscleShoulders',
@@ -122,7 +132,7 @@ function migrateToProfiles(){
 /* dailyStats was a single object with no date, so every day overwrote the one
    before it. Keep whatever value was there by filing it under today. */
 function migrateDailyLog(){
-  dailyLog = loadKey('dailyLog', null);
+  dailyLog = objOr(loadKey('dailyLog', null), null);
   if(dailyLog) return;
   dailyLog = {};
   const old = loadKey('dailyStats', null);
@@ -592,14 +602,20 @@ function deleteProfile(id){
 }
 
 function loadProfileData(){
-  settings     = loadKey('settings', { defaultRestSec: 90, barKg: 20 });
-  user         = loadKey('user', null);
-  metrics      = loadKey('metrics', null);
-  meals        = loadKey('meals', []);
-  exercises    = loadKey('exercises', []);
-  trainingLog  = loadKey('trainingLog', []);
-  templates    = loadKey('templates', []);
-  trainingDays = loadKey('trainingDays', [false,false,false,false,false,false,false]);
+  /* Every collection is shape-checked on the way in. Without this a single
+     wrong-typed value — from a corrupted backup or an interrupted write —
+     threw inside init() on every load, and the app never started at all: no
+     screen, no way to reach the profile switcher, nothing short of wiping
+     browser storage. Falling back to the empty default keeps the app usable
+     and leaves the rest of the profile intact. */
+  settings     = objOr(loadKey('settings', null), { defaultRestSec: 90, barKg: 20 });
+  user         = objOr(loadKey('user', null), null);
+  metrics      = objOr(loadKey('metrics', null), null);
+  meals        = arrOr(loadKey('meals', []), []);
+  exercises    = arrOr(loadKey('exercises', []), []);
+  trainingLog  = arrOr(loadKey('trainingLog', []), []);
+  templates    = arrOr(loadKey('templates', []), []);
+  trainingDays = daysOr(loadKey('trainingDays', null));
   migrateDailyLog();
   migrateShapes();
   viewingDate = todayKey();
@@ -2082,6 +2098,7 @@ function openCamera(mode){
   // A QR scanned for the previous machine must never be attached to the next one.
   stopQrScan();
   pendingQrUrl = null;
+  lastRejectedQr = null;
   lastMachineData = null;
   showQrPanel(false);
   const qrInput = document.getElementById('qrUrlInput');
@@ -2274,14 +2291,13 @@ function machineInfoHtml(d){
 
   if(brand) html += infoBlock(t('infoBrandLabel'), '<div class="info-text">' + esc(brand) + '</div>');
 
-  let muscleTags = '<span class="tag muscle">' + esc(muscleLabel(d.muscle)) + '</span>';
+  html += infoBlock(t('infoMusclesLabel'),
+    '<div class="ex-tags"><span class="tag muscle">' + esc(muscleLabel(d.muscle)) + '</span></div>');
   if(secondary.length){
-    muscleTags += secondary.map(function(m){
-      return ' <span class="tag">' + esc(muscleLabel(m)) + '</span>';
-    }).join('');
+    html += infoBlock(t('infoSecondaryLabel'), '<div class="ex-tags">' +
+      secondary.map(function(m){ return '<span class="tag">' + esc(muscleLabel(m)) + '</span>'; }).join('') +
+      '</div>');
   }
-  html += infoBlock(secondary.length ? t('infoMusclesLabel') : t('infoMusclesLabel'),
-    '<div class="ex-tags">' + muscleTags + '</div>');
 
   if(d.setup) html += infoBlock(t('infoSetupLabel'), '<div class="info-text">' + esc(d.setup) + '</div>');
   if(d.howTo) html += infoBlock(t('infoHowLabel'), '<div class="info-text">' + esc(d.howTo) + '</div>');
@@ -2316,7 +2332,11 @@ function renderVisionResult(data){
   if(data.identified === false){
     out.innerHTML = '<div class="vision-warn">' + esc(t('notAMachine')) +
       (data.machine ? ' — ' + esc(data.machine) : '') + '</div>';
-    showQrPanel(false);
+    // A bad angle or poor light lands here too, and the sticker on the machine
+    // is precisely what rescues it — so the QR route stays open rather than
+    // leaving a dead end.
+    showQrPanel(true);
+    setQrStatus(t('qrNeeded'), true);
     return;
   }
 
@@ -2440,9 +2460,20 @@ function stopQrScan(){
 
 /* A scanned or pasted URL is evidence about the machine, so the photo is sent
    again with it rather than being thrown away. */
+let lastRejectedQr = null;
 function useQrUrl(url){
   const clean = safeUrl(url);
-  if(!clean){ setQrStatus(t('qrBadUrl')); return; }
+  if(!clean){
+    // The scan loop re-reads the same sticker several times a second. Gym QR
+    // codes are often WiFi or plain text, so say it once and keep looking
+    // instead of hammering the same message.
+    if(url !== lastRejectedQr){
+      lastRejectedQr = url;
+      setQrStatus(t('qrBadUrl'));
+    }
+    return;
+  }
+  lastRejectedQr = null;
   stopQrScan();
   pendingQrUrl = clean;
   setQrStatus(t('qrFound'), true);
@@ -2639,17 +2670,45 @@ function importData(input){
     try { data = JSON.parse(reader.result); }
     catch(e){ flashToast(t('importFailed')); input.value = ''; return; }
     if(!data || data._format !== 'fitpro-backup'){ flashToast(t('importFailed')); input.value = ''; return; }
+
+    /* Shape is checked before anything is written. The previous version wrote
+       every field first and only then walked the data — so a backup with one
+       wrong-typed field (a truncated transfer, a hand edit, another version's
+       export) persisted the bad value and then threw, leaving the app unable
+       to start on any later load. Nothing is saved unless all of it is sane. */
+    const clean = {
+      user:         objOr(data.user, null),
+      metrics:      objOr(data.metrics, null),
+      meals:        arrOr(data.meals, null),
+      exercises:    arrOr(data.exercises, null),
+      trainingLog:  arrOr(data.trainingLog, null),
+      dailyLog:     objOr(data.dailyLog, null),
+      templates:    arrOr(data.templates, null),
+      trainingDays: (Array.isArray(data.trainingDays) && data.trainingDays.length === 7) ? data.trainingDays.map(Boolean) : null,
+      settings:     objOr(data.settings, null)
+    };
+    // A field that is absent is fine — it just gets the empty default. A field
+    // that is present but the wrong type means the file is not what it claims.
+    const bad = Object.keys(clean).some(function(k){
+      return clean[k] === null && data[k] !== undefined && data[k] !== null;
+    });
+    if(bad || !objOr(clean.user, null) || !objOr(clean.metrics, null)){
+      flashToast(t('importFailed'));
+      input.value = '';
+      return;
+    }
+
     if(!confirm(t('importConfirm'))){ input.value = ''; return; }
 
-    user = data.user || null;
-    metrics = data.metrics || null;
-    meals = data.meals || [];
-    exercises = data.exercises || [];
-    trainingLog = data.trainingLog || [];
-    dailyLog = data.dailyLog || {};
-    templates = data.templates || [];
-    trainingDays = data.trainingDays || [false,false,false,false,false,false,false];
-    settings = data.settings || settings;
+    user = clean.user;
+    metrics = clean.metrics;
+    meals = clean.meals || [];
+    exercises = clean.exercises || [];
+    trainingLog = clean.trainingLog || [];
+    dailyLog = clean.dailyLog || {};
+    templates = clean.templates || [];
+    trainingDays = clean.trainingDays || [false,false,false,false,false,false,false];
+    settings = clean.settings || settings;
 
     const toPersist = {
       user:user, metrics:metrics, meals:meals, exercises:exercises, trainingLog:trainingLog,
@@ -2659,8 +2718,8 @@ function importData(input){
 
     migrateShapes();
     input.value = '';
-    if(user && metrics){ enterApp(true); flashToast(t('importedToast')); }
-    else flashToast(t('importFailed'));
+    enterApp(true);
+    flashToast(t('importedToast'));
   };
   reader.readAsText(file);
 }
