@@ -601,6 +601,22 @@
       <button class="btn" id="camRetakeBtn" onclick="retakePhoto()" style="display:none;" data-i18n="cameraRetake">צלם שוב</button>
       <button class="btn btn-accent" id="camAnalyzeBtn" onclick="analyzePhoto()" style="display:none;" data-i18n="cameraAnalyze">נתח תמונה</button>
     </div>
+
+    <!-- QR fallback: used when the photo alone cannot pin the machine down.
+         Hidden until the machine flow needs it. -->
+    <div id="qrPanel" style="display:none;">
+      <div class="qr-note" id="qrNote" data-i18n="qrHint">סרקו את קוד ה-QR שעל המכשיר כדי לזהות אותו בוודאות</div>
+      <div class="btn-group">
+        <button class="btn btn-accent" id="qrScanBtn" onclick="startQrScan()">🔳 סרוק QR</button>
+        <button class="btn" id="qrManualBtn" onclick="toggleQrManual()" data-i18n="qrManualBtn">הדבק קישור</button>
+      </div>
+      <div class="form-row" id="qrManualRow" style="display:none; margin-top:8px;">
+        <input class="form-input" id="qrUrlInput" type="url" inputmode="url" placeholder="https://..." dir="ltr">
+        <button class="btn btn-accent" onclick="submitQrUrl()" data-i18n="qrUseBtn">השתמש בקישור</button>
+      </div>
+      <div class="qr-note" id="qrStatus"></div>
+    </div>
+
     <div id="visionResult"></div>
     <button class="modal-close" onclick="closeCamera()" data-i18n="cancelBtn">ביטול</button>
   </div>
@@ -611,6 +627,14 @@
     <div class="modal-title" data-i18n="addToSessionBtn">＋ הוסף תרגיל לאימון</div>
     <div id="sessionExPicker"></div>
     <button class="modal-close" onclick="closeAddToSession()" data-i18n="cancelBtn">ביטול</button>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="machineInfoModal" onclick="if(event.target===this)closeExerciseInfo()">
+  <div class="modal">
+    <div class="modal-title" id="machineInfoTitle">—</div>
+    <div id="machineInfoBody"></div>
+    <button class="modal-close" onclick="closeExerciseInfo()" data-i18n="cancelBtn">ביטול</button>
   </div>
 </div>
 
