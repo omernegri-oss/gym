@@ -2,7 +2,7 @@
    Gyms have poor reception, so the app itself must load without the network.
    User data lives in localStorage, which is always local anyway. */
 
-const CACHE = 'fitpro-v2';
+const CACHE = 'fitpro-v3';
 const ASSETS = [
   '.',
   'index.html',
@@ -30,6 +30,13 @@ self.addEventListener('activate', function(e){
       })
       .then(function(){ return self.clients.claim(); })
   );
+});
+
+/* The page asks for the update when it judges the moment safe — mid-set is
+   not that moment. skipWaiting() also runs on install, so this is the path
+   for a build that arrives while an older worker is still controlling pages. */
+self.addEventListener('message', function(e){
+  if(e.data && e.data.type === 'SKIP_WAITING') self.skipWaiting();
 });
 
 self.addEventListener('fetch', function(e){
