@@ -307,6 +307,7 @@ const translations = {
     profileDeletedToast: 'הפרופיל נמחק', profileNameAlert: 'נא להזין שם פרופיל',
     profileLocalNote: 'הפרופילים נשמרים במכשיר הזה בלבד. אין סנכרון בין מכשירים.',
     workoutsCount: 'אימונים',
+    updateReady: 'גרסה חדשה של האפליקציה מוכנה', updateNow: 'רענן עכשיו',
     /* plate calculator */
     plateTitle: 'מחשבון פלטות', plateTarget: 'משקל יעד (ק״ג)', plateBar: 'משקל המוט (ק״ג)',
     plateResult: 'לכל צד', plateImpossible: 'לא ניתן להרכיב בדיוק את המשקל הזה',
@@ -447,6 +448,7 @@ const translations = {
     profileDeletedToast: 'Profile deleted', profileNameAlert: 'Please enter a profile name',
     profileLocalNote: 'Profiles are stored on this device only. There is no cross-device sync.',
     workoutsCount: 'workouts',
+    updateReady: 'A new version of the app is ready', updateNow: 'Refresh now',
     plateTitle: 'Plate calculator', plateTarget: 'Target weight (kg)', plateBar: 'Bar weight (kg)',
     plateResult: 'Per side', plateImpossible: 'That exact weight cannot be loaded',
     plateCalcBtn: '🏋 Plate calculator',
@@ -2078,6 +2080,37 @@ let camStream = null;
 let capturedDataUrl = null;
 let visionMode = 'machine';   // 'machine' | 'food' — which endpoint/renderer analyzePhoto() uses
 
+/* null = not asked yet, true/false = the server's answer for this session. */
+let visionConfigured = null;
+
+/* Asked once when the camera first opens, so an unconfigured install says so
+   immediately instead of after the user has framed and taken a photo. A probe
+   that fails for any other reason is treated as "assume it works" — the
+   analyse call itself still reports the real problem, and a flaky status
+   check must not disable a feature that is actually fine. */
+async function checkVisionConfigured(){
+  if(visionConfigured !== null) return visionConfigured;
+  try {
+    const res = await fetch('/api/vision-status', { method: 'GET' });
+    if(res.status === 404 || res.status === 405){ visionConfigured = false; return false; }
+    if(!res.ok) return true;
+    const data = await res.json();
+    visionConfigured = !!(data && data.configured);
+  } catch(e){ return true; }
+  return visionConfigured;
+}
+
+async function announceIfUnavailable(){
+  const configured = await checkVisionConfigured();
+  if(configured) return;
+  const out = document.getElementById('visionResult');
+  // The modal may already be closed, or moved on to another machine.
+  if(!out || !document.getElementById('camModal').classList.contains('show')) return;
+  if(out.innerHTML) return;
+  out.innerHTML = '<div class="vision-warn">' +
+    esc(t(visionMode === 'food' ? 'visionNotConfiguredFood' : 'visionNotConfigured')) + '</div>';
+}
+
 function openCamera(mode){
   visionMode = mode === 'food' ? 'food' : 'machine';
   capturedDataUrl = null;
@@ -2105,6 +2138,7 @@ function openCamera(mode){
   if(qrInput) qrInput.value = '';
   document.getElementById('camModal').classList.add('show');
   updateCamButtons('idle');
+  announceIfUnavailable();
 }
 
 /* The title/hint above are JS-managed (not data-i18n) because they depend on
@@ -2248,6 +2282,8 @@ async function analyzePhoto(){
     });
     // 501 = key not set; 404/405 = deployed without a serverless runtime at all.
     if(res.status === 501 || res.status === 404 || res.status === 405){
+      // Definitive: skip the walk to the closed door next time.
+      visionConfigured = false;
       out.innerHTML = '<div class="vision-warn">' + esc(t(notConfiguredKey)) + '</div>';
       return;
     }
@@ -2772,10 +2808,70 @@ document.addEventListener('keydown', function(e){
   });
 });
 
+/* ---- keeping an installed PWA off a stale build ------------------------
+   A phone that keeps the app open for days would otherwise sit on whatever
+   build it started with. The worker calls skipWaiting()/clients.claim(), so a
+   new one takes over by itself — but the page already in memory is still
+   running the old JS until it reloads, which is the part the user actually
+   sees. So: notice the new worker, and reload — silently when the app is
+   idle, and only with the user's say-so when a workout is running, since
+   yanking the page mid-set is worse than a few more minutes on an old build. */
+let swReloading = false;
+
+function showUpdateBar(){
+  const bar = document.getElementById('updateBar');
+  if(bar) bar.classList.add('show');
+}
+function applyUpdate(){
+  if(swReloading) return;
+  swReloading = true;
+  location.reload();
+}
+
+function onNewVersionReady(){
+  // Mid-workout the choice is the user's; otherwise take it now and be quiet.
+  if(workoutState === 'running'){ showUpdateBar(); return; }
+  applyUpdate();
+}
+
 function registerSW(){
   if(!('serviceWorker' in navigator)) return;
   if(location.protocol !== 'http:' && location.protocol !== 'https:') return;
-  navigator.serviceWorker.register('sw.js').catch(function(){ /* offline support is optional */ });
+
+  // On a first-ever install the worker takes control without there being an
+  // older build to replace. That is not an update, and must not reload.
+  const hadController = !!navigator.serviceWorker.controller;
+
+  navigator.serviceWorker.addEventListener('controllerchange', function(){
+    if(!hadController) return;
+    onNewVersionReady();
+  });
+
+  navigator.serviceWorker.register('sw.js').then(function(reg){
+    if(!reg) return;
+
+    // A worker already waiting when this page loaded: ask it to take over.
+    if(reg.waiting && hadController) reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+
+    reg.addEventListener('updatefound', function(){
+      const fresh = reg.installing;
+      if(!fresh) return;
+      fresh.addEventListener('statechange', function(){
+        if(fresh.state === 'installed' && navigator.serviceWorker.controller){
+          fresh.postMessage({ type: 'SKIP_WAITING' });
+        }
+      });
+    });
+
+    /* A long-lived PWA never re-registers, so nothing would look for a new
+       build. Check when the app comes back to the foreground, and on a slow
+       timer for a session left open all day. */
+    const check = function(){ reg.update().catch(function(){}); };
+    document.addEventListener('visibilitychange', function(){
+      if(document.visibilityState === 'visible') check();
+    });
+    setInterval(check, 30 * 60 * 1000);
+  }).catch(function(){ /* offline support is optional */ });
 }
 
 function init(){

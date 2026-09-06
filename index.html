@@ -638,6 +638,13 @@
   </div>
 </div>
 
+<!-- Shown only when a new build is ready and a workout is in progress, so the
+     reload waits for the user rather than interrupting a set. -->
+<div class="update-bar" id="updateBar">
+  <span data-i18n="updateReady">גרסה חדשה של האפליקציה מוכנה</span>
+  <button class="rest-btn" onclick="applyUpdate()" data-i18n="updateNow">רענן עכשיו</button>
+</div>
+
 <div class="save-toast" id="saveToast" data-i18n="savedToastDefault">נשמר</div>
 
 <script src="app.js"></script>

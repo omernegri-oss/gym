@@ -177,6 +177,14 @@ body { font-family: Heebo, Arial, sans-serif; background: #161616; }
 .rest-btn { background: rgba(0,0,0,0.15); border: none; color: #141400; padding: 8px 12px; border-radius: 8px; font-family: inherit; font-weight: 700; font-size: 12px; cursor: pointer; }
 .rest-btn:hover { background: rgba(0,0,0,0.28); }
 
+/* new-version prompt */
+.update-bar { position: fixed; inset-inline: 0; bottom: 0; background: #3fd7e8; color: #10262a;
+  padding: 12px 16px; display: none; align-items: center; justify-content: space-between; gap: 12px;
+  z-index: 320; font-size: 12px; font-weight: 700;
+  padding-bottom: calc(12px + env(safe-area-inset-bottom)); }
+.update-bar.show { display: flex; }
+.rest-bar.show ~ .update-bar.show { bottom: 64px; }
+
 /* ============ MODAL (plate calc, profiles, camera) ============ */
 .modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 500; display: none; align-items: center; justify-content: center; padding: 16px; }
 .modal-backdrop.show { display: flex; }
