@@ -894,16 +894,16 @@ function renderDayMetrics(){
 
   document.getElementById('sleepInput').value = e.sleep || '';
   document.getElementById('stepsInput').value = e.steps || '';
-  document.getElementById('bodyKgInput').value = e.bodyKg || '';
-  document.getElementById('restHrInput').value = e.restHr || '';
   document.getElementById('sleepBar').style.width = Math.min(100, (e.sleep/SLEEP_GOAL_HOURS)*100) + '%';
   document.getElementById('stepsBar').style.width = Math.min(100, (e.steps/STEPS_GOAL)*100) + '%';
 }
 
 function saveDayMetric(field){
   const e = dayEntry(viewingDate);
-  const map = { sleep:'sleepInput', steps:'stepsInput', bodyKg:'bodyKgInput', restHr:'restHrInput' };
-  e[field] = Math.max(0, num(document.getElementById(map[field]).value));
+  const map = { sleep:'sleepInput', steps:'stepsInput' };
+  const input = document.getElementById(map[field]);
+  if(!input) return;
+  e[field] = Math.max(0, num(input.value));
   saveKey('dailyLog', dailyLog);
 
   // body weight is a real input to TDEE — keep goals honest when it changes
@@ -1071,8 +1071,20 @@ function updateMetrics(){
   user.age = age; user.height = height; user.weight = weight;
   saveKey('metrics', metrics);
   saveKey('user', user);
+
+  /* Body weight is also a data point in time, not just a setting: the trend
+     chart plots dailyLog[date].bodyKg. The dashboard field that used to write
+     it is gone, so this is now the one place a new weight is recorded. */
+  if(weight > 0){
+    const dk = todayKey();
+    dayEntry(dk).bodyKg = weight;
+    saveKey('dailyLog', dailyLog);
+    renderProgress();
+  }
+
   renderDashboardGoal();
   renderNutritionSummary();
+  renderDayMetrics();
   flashToast(t('metricsUpdatedToast'));
 }
 
@@ -2828,10 +2840,27 @@ function applyUpdate(){
   location.reload();
 }
 
+/* A silent reload is only silent when there is nothing to lose. Checking for a
+   running workout was far too narrow: finishing a workout leaves the state
+   'paused' with the log form open, so notes typed about the set that just
+   ended were being discarded — as was a half-filled onboarding form, or any
+   open add-form. Reload by ourselves only when the app is genuinely idle. */
+function safeToReloadNow(){
+  if(workoutState !== 'idle') return false;
+  const app = document.getElementById('mainApp');
+  if(!app || !app.classList.contains('active')) return false;   // still onboarding
+  if(document.querySelector('.add-form.show')) return false;    // a form is open
+  if(document.querySelector('.modal-backdrop.show')) return false;
+  const el = document.activeElement;
+  // typing right now, in anything
+  if(el && /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName) && el.value) return false;
+  return true;
+}
+
 function onNewVersionReady(){
-  // Mid-workout the choice is the user's; otherwise take it now and be quiet.
-  if(workoutState === 'running'){ showUpdateBar(); return; }
-  applyUpdate();
+  // When anything is unsaved the choice is the user's; otherwise be quiet.
+  if(safeToReloadNow()){ applyUpdate(); return; }
+  showUpdateBar();
 }
 
 function registerSW(){
