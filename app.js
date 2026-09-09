@@ -259,6 +259,7 @@ const translations = {
     switchToProfileBtn: 'החלף',
     templateNameAlert: 'נא להזין שם תבנית', templateExAlert: 'נא לבחור לפחות תרגיל אחד',
     templateStartedToast: 'האימון התחיל מתבנית',
+    templateGoneToast: 'כל התרגילים בתבנית הזו נמחקו — ערכו אותה או הוסיפו תרגילים',
     /* progress */
     progressTitle: 'התקדמות', pickExercise: 'בחרו תרגיל', volumeTitle: 'נפח שבועי לפי קבוצת שריר',
     volumeHint: 'סטים בשבוע האחרון. הטווח המומלץ הוא 10–20 סטים לקבוצה.',
@@ -407,6 +408,7 @@ const translations = {
     switchToProfileBtn: 'Switch',
     templateNameAlert: 'Please enter a template name', templateExAlert: 'Pick at least one exercise',
     templateStartedToast: 'Workout started from template',
+    templateGoneToast: 'Every exercise in this template has been deleted — edit it or add exercises',
     progressTitle: 'Progress', pickExercise: 'Pick an exercise', volumeTitle: 'Weekly volume by muscle group',
     volumeHint: 'Sets in the last 7 days. The recommended range is 10–20 sets per group.',
     bodyWeightChartTitle: 'Body weight trend', strengthChartTitle: 'Exercise progress (est. 1RM)',
@@ -894,16 +896,16 @@ function renderDayMetrics(){
 
   document.getElementById('sleepInput').value = e.sleep || '';
   document.getElementById('stepsInput').value = e.steps || '';
-  document.getElementById('bodyKgInput').value = e.bodyKg || '';
-  document.getElementById('restHrInput').value = e.restHr || '';
   document.getElementById('sleepBar').style.width = Math.min(100, (e.sleep/SLEEP_GOAL_HOURS)*100) + '%';
   document.getElementById('stepsBar').style.width = Math.min(100, (e.steps/STEPS_GOAL)*100) + '%';
 }
 
 function saveDayMetric(field){
   const e = dayEntry(viewingDate);
-  const map = { sleep:'sleepInput', steps:'stepsInput', bodyKg:'bodyKgInput', restHr:'restHrInput' };
-  e[field] = Math.max(0, num(document.getElementById(map[field]).value));
+  const map = { sleep:'sleepInput', steps:'stepsInput' };
+  const input = document.getElementById(map[field]);
+  if(!input) return;
+  e[field] = Math.max(0, num(input.value));
   saveKey('dailyLog', dailyLog);
 
   // body weight is a real input to TDEE — keep goals honest when it changes
@@ -1017,6 +1019,8 @@ function editExercise(i){
 
 function deleteExercise(i){
   if(!exercises[i]) return;
+  // The card describes this exercise; it must not outlive it on screen.
+  if(infoModalExId === exercises[i].id) closeExerciseInfo();
   exercises.splice(i, 1);
   saveKey('exercises', exercises);
   if(editingExerciseIndex !== null) toggleExerciseForm(false);
@@ -1071,8 +1075,20 @@ function updateMetrics(){
   user.age = age; user.height = height; user.weight = weight;
   saveKey('metrics', metrics);
   saveKey('user', user);
+
+  /* Body weight is also a data point in time, not just a setting: the trend
+     chart plots dailyLog[date].bodyKg. The dashboard field that used to write
+     it is gone, so this is now the one place a new weight is recorded. */
+  if(weight > 0){
+    const dk = todayKey();
+    dayEntry(dk).bodyKg = weight;
+    saveKey('dailyLog', dailyLog);
+    renderProgress();
+  }
+
   renderDashboardGoal();
   renderNutritionSummary();
+  renderDayMetrics();
   flashToast(t('metricsUpdatedToast'));
 }
 
@@ -1224,14 +1240,21 @@ function seedSessionFromProgram(){
 function startFromTemplate(id){
   const tpl = templates.find(function(x){ return x.id === id; });
   if(!tpl) return;
-  session.name = tpl.name;
-  session.entries = tpl.exerciseIds.map(function(exId){
+  const entries = tpl.exerciseIds.map(function(exId){
     const ex = exercises.find(function(e){ return e.id === exId; });
     if(!ex) return null;
     return { exId: ex.id, name: ex.name, muscle: ex.muscle || 'other',
              restSec: num(ex.restSec) || settings.defaultRestSec,
              sets: [ { kg: num(ex.targetKg), reps: num(ex.reps) || 0, done: false } ] };
   }).filter(Boolean);
+
+  /* Every exercise this template pointed at has since been deleted. Starting a
+     workout with nothing in it and a running clock looks like the app lost the
+     template; say what happened instead. */
+  if(entries.length === 0){ flashToast(t('templateGoneToast')); return; }
+
+  session.name = tpl.name;
+  session.entries = entries;
   workoutState = 'running';
   workoutSeconds = 0;
   clearInterval(workoutTimerHandle);
@@ -2570,10 +2593,12 @@ function addVisionExercise(name, muscle){
 }
 
 /* The saved card, reopened from the exercise collection or mid-workout. */
+let infoModalExId = null;
 function openExerciseInfo(exId){
   const ex = exercises.find(function(e){ return e.id === exId; });
   const modal = document.getElementById('machineInfoModal');
   if(!ex || !modal) return;
+  infoModalExId = exId;
   document.getElementById('machineInfoTitle').textContent = ex.info && ex.info.machine ? ex.info.machine : ex.name;
   document.getElementById('machineInfoBody').innerHTML = ex.info
     ? machineInfoHtml(ex.info)
@@ -2583,6 +2608,7 @@ function openExerciseInfo(exId){
 function closeExerciseInfo(){
   const m = document.getElementById('machineInfoModal');
   if(m) m.classList.remove('show');
+  infoModalExId = null;
 }
 
 /* Food photo → estimated macros. The meal model only ever stored
@@ -2828,10 +2854,27 @@ function applyUpdate(){
   location.reload();
 }
 
+/* A silent reload is only silent when there is nothing to lose. Checking for a
+   running workout was far too narrow: finishing a workout leaves the state
+   'paused' with the log form open, so notes typed about the set that just
+   ended were being discarded — as was a half-filled onboarding form, or any
+   open add-form. Reload by ourselves only when the app is genuinely idle. */
+function safeToReloadNow(){
+  if(workoutState !== 'idle') return false;
+  const app = document.getElementById('mainApp');
+  if(!app || !app.classList.contains('active')) return false;   // still onboarding
+  if(document.querySelector('.add-form.show')) return false;    // a form is open
+  if(document.querySelector('.modal-backdrop.show')) return false;
+  const el = document.activeElement;
+  // typing right now, in anything
+  if(el && /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName) && el.value) return false;
+  return true;
+}
+
 function onNewVersionReady(){
-  // Mid-workout the choice is the user's; otherwise take it now and be quiet.
-  if(workoutState === 'running'){ showUpdateBar(); return; }
-  applyUpdate();
+  // When anything is unsaved the choice is the user's; otherwise be quiet.
+  if(safeToReloadNow()){ applyUpdate(); return; }
+  showUpdateBar();
 }
 
 function registerSW(){
