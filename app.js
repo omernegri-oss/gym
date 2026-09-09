@@ -259,6 +259,7 @@ const translations = {
     switchToProfileBtn: 'החלף',
     templateNameAlert: 'נא להזין שם תבנית', templateExAlert: 'נא לבחור לפחות תרגיל אחד',
     templateStartedToast: 'האימון התחיל מתבנית',
+    templateGoneToast: 'כל התרגילים בתבנית הזו נמחקו — ערכו אותה או הוסיפו תרגילים',
     /* progress */
     progressTitle: 'התקדמות', pickExercise: 'בחרו תרגיל', volumeTitle: 'נפח שבועי לפי קבוצת שריר',
     volumeHint: 'סטים בשבוע האחרון. הטווח המומלץ הוא 10–20 סטים לקבוצה.',
@@ -407,6 +408,7 @@ const translations = {
     switchToProfileBtn: 'Switch',
     templateNameAlert: 'Please enter a template name', templateExAlert: 'Pick at least one exercise',
     templateStartedToast: 'Workout started from template',
+    templateGoneToast: 'Every exercise in this template has been deleted — edit it or add exercises',
     progressTitle: 'Progress', pickExercise: 'Pick an exercise', volumeTitle: 'Weekly volume by muscle group',
     volumeHint: 'Sets in the last 7 days. The recommended range is 10–20 sets per group.',
     bodyWeightChartTitle: 'Body weight trend', strengthChartTitle: 'Exercise progress (est. 1RM)',
@@ -1017,6 +1019,8 @@ function editExercise(i){
 
 function deleteExercise(i){
   if(!exercises[i]) return;
+  // The card describes this exercise; it must not outlive it on screen.
+  if(infoModalExId === exercises[i].id) closeExerciseInfo();
   exercises.splice(i, 1);
   saveKey('exercises', exercises);
   if(editingExerciseIndex !== null) toggleExerciseForm(false);
@@ -1236,14 +1240,21 @@ function seedSessionFromProgram(){
 function startFromTemplate(id){
   const tpl = templates.find(function(x){ return x.id === id; });
   if(!tpl) return;
-  session.name = tpl.name;
-  session.entries = tpl.exerciseIds.map(function(exId){
+  const entries = tpl.exerciseIds.map(function(exId){
     const ex = exercises.find(function(e){ return e.id === exId; });
     if(!ex) return null;
     return { exId: ex.id, name: ex.name, muscle: ex.muscle || 'other',
              restSec: num(ex.restSec) || settings.defaultRestSec,
              sets: [ { kg: num(ex.targetKg), reps: num(ex.reps) || 0, done: false } ] };
   }).filter(Boolean);
+
+  /* Every exercise this template pointed at has since been deleted. Starting a
+     workout with nothing in it and a running clock looks like the app lost the
+     template; say what happened instead. */
+  if(entries.length === 0){ flashToast(t('templateGoneToast')); return; }
+
+  session.name = tpl.name;
+  session.entries = entries;
   workoutState = 'running';
   workoutSeconds = 0;
   clearInterval(workoutTimerHandle);
@@ -2582,10 +2593,12 @@ function addVisionExercise(name, muscle){
 }
 
 /* The saved card, reopened from the exercise collection or mid-workout. */
+let infoModalExId = null;
 function openExerciseInfo(exId){
   const ex = exercises.find(function(e){ return e.id === exId; });
   const modal = document.getElementById('machineInfoModal');
   if(!ex || !modal) return;
+  infoModalExId = exId;
   document.getElementById('machineInfoTitle').textContent = ex.info && ex.info.machine ? ex.info.machine : ex.name;
   document.getElementById('machineInfoBody').innerHTML = ex.info
     ? machineInfoHtml(ex.info)
@@ -2595,6 +2608,7 @@ function openExerciseInfo(exId){
 function closeExerciseInfo(){
   const m = document.getElementById('machineInfoModal');
   if(m) m.classList.remove('show');
+  infoModalExId = null;
 }
 
 /* Food photo → estimated macros. The meal model only ever stored
