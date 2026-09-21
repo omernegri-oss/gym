@@ -177,7 +177,7 @@ const translations = {
     fieldWeight: 'משקל (ק״ג)', errorWeight: 'נא להזין משקל בין 20 ל-300 ק״ג',
     fieldHeight: 'גובה (ס״מ)', errorHeight: 'נא להזין גובה בין 100 ל-250 ס״מ',
     fieldGoal: 'מה היעד שלך?', goalPlaceholder: 'בחר יעד...',
-    goalWeightLoss: '🔥 חיטוב (הפחתת משקל)', goalMaintenance: '⚖️ שמירה על משקל', goalMuscleGain: '💪 בנייה שרירית',
+    goalWeightLoss: '🔥 חיטוב (הפחתת משקל)', goalRecomposition: '🔄 ריקומפוזישן (שריר עולה, שומן יורד)', goalMuscleGain: '💪 בנייה שרירית',
     errorGoal: 'נא לבחור יעד',
     macroTitle: '🎯 התוכנית התזונתית שלך', macroCals: 'קלוריות', macroProtein: 'חלבון', macroCarbs: 'פחמימות', macroFats: 'שומן',
     unitKcalDay: 'kcal/יום', unitGramDay: 'גרם/יום',
@@ -329,7 +329,7 @@ const translations = {
     fieldWeight: 'Weight (kg)', errorWeight: 'Please enter a weight between 20 and 300 kg',
     fieldHeight: 'Height (cm)', errorHeight: 'Please enter a height between 100 and 250 cm',
     fieldGoal: 'What is your goal?', goalPlaceholder: 'Choose a goal...',
-    goalWeightLoss: '🔥 Cutting (weight loss)', goalMaintenance: '⚖️ Maintain weight', goalMuscleGain: '💪 Build muscle',
+    goalWeightLoss: '🔥 Cutting (weight loss)', goalRecomposition: '🔄 Recomposition (build muscle, lose fat)', goalMuscleGain: '💪 Build muscle',
     errorGoal: 'Please choose a goal',
     macroTitle: '🎯 Your nutrition plan', macroCals: 'Calories', macroProtein: 'Protein', macroCarbs: 'Carbs', macroFats: 'Fat',
     unitKcalDay: 'kcal/day', unitGramDay: 'g/day',
@@ -464,7 +464,7 @@ const translations = {
 };
 
 const MEAL_TAG_KEYS = { breakfast:'mealTagBreakfast', lunch:'mealTagLunch', dinner:'mealTagDinner', snack:'mealTagSnack' };
-const GOAL_KEY_MAP = { 'weight-loss':'goalWeightLoss', 'maintenance':'goalMaintenance', 'muscle-gain':'goalMuscleGain' };
+const GOAL_KEY_MAP = { 'weight-loss':'goalWeightLoss', 'recomposition':'goalRecomposition', 'muscle-gain':'goalMuscleGain' };
 
 let currentLang = 'he';
 function t(key){
@@ -620,10 +620,26 @@ function loadProfileData(){
   trainingLog  = arrOr(loadKey('trainingLog', []), []);
   templates    = arrOr(loadKey('templates', []), []);
   trainingDays = daysOr(loadKey('trainingDays', null));
+  migrateGoal();
   migrateDailyLog();
   migrateShapes();
   viewingDate = todayKey();
   restoreSession();
+}
+
+/* The "maintain weight" goal was replaced by "recomposition" - same neutral
+   calorie target, higher protein. Existing profiles saved under the old
+   value are moved over transparently, and their macro target is recomputed
+   so the higher protein actually takes effect instead of sitting stale until
+   the next metrics edit. */
+function migrateGoal(){
+  if(!user || user.goal !== 'maintenance') return;
+  user.goal = 'recomposition';
+  saveKey('user', user);
+  if(metrics){
+    metrics.macroTarget = calculateMacros(metrics.tdee, user.goal, metrics.weight);
+    saveKey('metrics', metrics);
+  }
 }
 
 /* ---------- 6. macros + onboarding ---------- */
@@ -636,7 +652,15 @@ function calculateTDEE(age, gender, weight, height){
 function calculateMacros(tdee, goal, weight){
   let targetCals, pm, fm;
   if(goal === 'weight-loss'){ targetCals = Math.round(tdee - 400); pm = 2.0; fm = 1.0; }
-  else if(goal === 'maintenance'){ targetCals = tdee; pm = 1.8; fm = 1.0; }
+  else if(goal === 'recomposition'){
+    // Body recomposition builds muscle and loses fat at the same time, which
+    // only works at (roughly) maintenance calories - a surplus or deficit
+    // would just turn it back into pure gain or pure loss. Protein is pushed
+    // up toward cutting-level intake (vs. the old flat "maintain weight" 1.8),
+    // since that's what actually drives the muscle side of the trade while
+    // calories hold steady.
+    targetCals = tdee; pm = 2.0; fm = 1.0;
+  }
   else { targetCals = Math.round(tdee + 400); pm = 2.2; fm = 1.1; }
   const protein = Math.round(weight * pm);
   const fats = Math.round(weight * fm);
@@ -2778,6 +2802,7 @@ function importData(input){
     };
     Object.keys(toPersist).forEach(function(k){ saveKey(k, toPersist[k]); });
 
+    migrateGoal();
     migrateShapes();
     input.value = '';
     enterApp(true);

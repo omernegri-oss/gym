@@ -57,7 +57,7 @@
         <select class="select" id="goal" onchange="calcMacros()">
           <option value="" data-i18n="goalPlaceholder">בחר יעד...</option>
           <option value="weight-loss" data-i18n="goalWeightLoss">🔥 חיטוב (הפחתת משקל)</option>
-          <option value="maintenance" data-i18n="goalMaintenance">⚖️ שמירה על משקל</option>
+          <option value="recomposition" data-i18n="goalRecomposition">🔄 ריקומפוזישן (שריר עולה, שומן יורד)</option>
           <option value="muscle-gain" data-i18n="goalMuscleGain">💪 בנייה שרירית</option>
         </select>
         <div class="field-error" id="goalError" data-i18n="errorGoal">נא לבחור יעד</div>
@@ -184,8 +184,10 @@
         </div>
       </div>
 
-      <!-- daily metrics, now stored per date -->
-      <div class="card">
+      <!-- daily metrics, now stored per date - hidden from the dashboard per
+           product decision. Data (dailyLog) and saveDayMetric()/renderDayMetrics()
+           are unchanged; only this card's visibility changed. -->
+      <div class="card" style="display:none;">
         <div class="card-title" data-i18n="dayMetricsTitle">מדדים יומיים</div>
         <div class="date-nav">
           <button class="date-nav-btn" onclick="shiftViewingDate(-1)" aria-label="prev">‹</button>
@@ -383,8 +385,10 @@
             <button class="btn btn-accent" style="width: 100%; margin-top: 12px;" onclick="updateMetrics()" data-i18n="updateMetricsBtn">עדכן מדדים</button>
           </div>
 
-          <!-- backup -->
-          <div class="card">
+          <!-- backup: hidden from the Program screen per product decision. Data,
+               export/import logic and the functions below are all untouched -
+               only this card's visibility changed. -->
+          <div class="card" style="display:none;">
             <div class="card-title" data-i18n="dataTitle">הנתונים שלי</div>
             <div style="font-size:11px; color:#6f6f6f; line-height:1.6; margin-bottom:10px;" data-i18n="dataNote">הנתונים נשמרים בדפדפן בלבד.</div>
             <div class="btn-group" style="margin-top:0;">
@@ -437,7 +441,12 @@
         <div id="strengthChart"></div>
       </div>
 
-      <div class="grid-2">
+      <!-- Body-weight trend + per-muscle volume: hidden per product decision.
+           Both charts still render into these divs (renderProgress() is
+           unchanged) - only visibility changed, so re-enabling later is a
+           one-line revert. Hiding the whole row (not just its two cards)
+           avoids leaving an empty grid gap behind. -->
+      <div class="grid-2" style="display:none;">
         <div class="card">
           <div class="card-title" data-i18n="bodyWeightChartTitle">מגמת משקל גוף</div>
           <div id="bodyWeightChart"></div>
