@@ -198,6 +198,34 @@ body { font-family: Heebo, Arial, sans-serif; background: #161616; }
 .plate-bar { height: 5px; background: #6f6f6f; flex: 0 0 30px; border-radius: 2px; }
 .plate-empty { color: #6f6f6f; font-size: 12px; }
 
+/* food database search (Nutrition screen) */
+.foodDb-source { font-size: 11px; color: #6f6f6f; line-height: 1.6; margin: -6px 0 10px; }
+.foodDb-chips { display: flex; gap: 6px; overflow-x: auto; padding: 10px 0 2px; scrollbar-width: none; }
+.foodDb-chips::-webkit-scrollbar { display: none; }
+.foodDb-chip { flex: 0 0 auto; font-family: inherit; font-size: 11px; padding: 6px 12px; border-radius: 14px; border: 1px solid #333;
+  background: #1a1a1a; color: #9c9c9c; cursor: pointer; white-space: nowrap; }
+.foodDb-chip.on { background: #3fd7e8; color: #141400; border-color: #3fd7e8; font-weight: 700; }
+.foodDb-count { font-size: 11px; color: #6f6f6f; margin: 6px 2px 6px; }
+.foodDb-results { max-height: 260px; overflow-y: auto; }
+.foodDb-results .profile-row { margin-bottom: 6px; }
+.foodDb-kcal { text-align: end; flex-shrink: 0; font-variant-numeric: tabular-nums; }
+.foodDb-kcal b { display: block; font-size: 14px; color: #d7ff2b; }
+.foodDb-kcal span { font-size: 9px; color: #6f6f6f; }
+.foodDb-picker { margin-top: 12px; padding-top: 12px; border-top: 1px solid #333; }
+.foodDb-pick-name { font-weight: 700; font-size: 13px; }
+.foodDb-pick-per { font-size: 11px; color: #6f6f6f; margin-bottom: 8px; }
+.foodDb-presets { display: flex; gap: 6px; flex-wrap: wrap; margin: 10px 0; }
+.foodDb-preview { background: #1a1a1a; border-radius: 10px; padding: 10px 12px; margin-bottom: 10px; }
+.foodDb-preview-kcal { font-size: 20px; font-weight: 800; color: #d7ff2b; font-variant-numeric: tabular-nums; }
+.foodDb-preview-kcal span { font-size: 12px; font-weight: 400; color: #9c9c9c; }
+.foodDb-preview-mac { font-size: 12px; color: #9c9c9c; margin-top: 2px; }
+.foodDb-cart-wrap { margin-top: 14px; padding-top: 12px; border-top: 1px solid #333; }
+.foodDb-cart-row { display: flex; align-items: center; gap: 10px; background: #1a1a1a; border: 1px solid #333; border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; }
+.foodDb-cart-row .info { flex: 1; min-width: 0; }
+.foodDb-cart-row .info b { display: block; font-size: 12px; font-weight: 700; }
+.foodDb-cart-row .info span { font-size: 10px; color: #6f6f6f; }
+.foodDb-cart-row .kc { font-weight: 700; font-size: 12px; color: #d7ff2b; white-space: nowrap; font-variant-numeric: tabular-nums; }
+
 /* profiles */
 .profile-row { display: flex; align-items: center; gap: 10px; padding: 10px; background: #1a1a1a; border: 1px solid #333; border-radius: 10px; margin-bottom: 8px; cursor: pointer; }
 .profile-row.active { border-color: #d7ff2b; }

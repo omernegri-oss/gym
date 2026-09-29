@@ -498,6 +498,7 @@
             <button class="btn" onclick="toggleMealForm(true)" data-i18n="addMealBtn">＋ הוסף ארוחה</button>
             <button class="btn btn-accent" onclick="openCamera('food')" data-i18n="captureFood">📷 צלם אוכל</button>
           </div>
+          <button class="btn" style="width:100%; margin-top:8px;" onclick="openFoodDb()" data-i18n="foodDbBtn">🔍 חפש במאגר מזונות</button>
         </div>
 
         <div class="card">
@@ -622,6 +623,51 @@
     <div class="modal-title" data-i18n="addToSessionBtn">＋ הוסף תרגיל לאימון</div>
     <div id="sessionExPicker"></div>
     <button class="modal-close" onclick="closeAddToSession()" data-i18n="cancelBtn">ביטול</button>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="foodDbModal" onclick="if(event.target===this)closeFoodDb()">
+  <div class="modal">
+    <div class="modal-title" data-i18n="foodDbTitle">חיפוש במאגר מזונות</div>
+    <div class="foodDb-source" data-i18n="foodDbSource">מבוסס על מאגר צמרת, משרד הבריאות — 4,624 מזונות ל־100 גרם.</div>
+
+    <input class="form-input" id="fdbSearch" type="search" placeholder="לדוגמה: קוטג׳, חזה עוף, אורז" data-i18n-placeholder="foodDbSearchPlaceholder" oninput="scheduleFoodDbSearch()">
+    <div class="foodDb-chips" id="fdbCats"></div>
+    <div class="foodDb-count" id="fdbCount"></div>
+    <div class="foodDb-results" id="fdbResults"></div>
+
+    <!-- quantity picker for whichever result was tapped -->
+    <div class="foodDb-picker" id="fdbPicker" style="display:none;">
+      <div class="foodDb-pick-name" id="fdbPickName"></div>
+      <div class="foodDb-pick-per" id="fdbPickPer"></div>
+      <div class="form-row">
+        <div>
+          <label class="label" style="font-size:11px;" for="fdbQty" data-i18n="foodDbGramsLabel">כמות בגרמים</label>
+          <input class="form-input" id="fdbQty" type="number" min="0" step="1" inputmode="decimal" value="100" oninput="updateFoodDbPreview()">
+        </div>
+      </div>
+      <div class="foodDb-presets" id="fdbPresets"></div>
+      <div class="foodDb-preview">
+        <div class="foodDb-preview-kcal" id="fdbPreviewKcal">0 <span data-i18n="calUnitLabel">קק״ל</span></div>
+        <div class="foodDb-preview-mac" id="fdbPreviewMac"></div>
+      </div>
+      <div class="form-actions">
+        <button class="form-save" onclick="addFoodDbToCart()" data-i18n="foodDbAddToCart">＋ הוסף לסל</button>
+        <button class="form-cancel" onclick="cancelFoodDbPick()" data-i18n="cancelBtn">ביטול</button>
+      </div>
+    </div>
+
+    <!-- items accumulated for this meal -->
+    <div class="foodDb-cart-wrap">
+      <div class="card-title" style="margin-bottom:8px;" data-i18n="foodDbCartTitle">הסל שלי</div>
+      <div id="fdbCart"></div>
+      <div class="log-empty" id="fdbCartEmpty" data-i18n="foodDbCartEmpty">הסל ריק. חפשו מזון והוסיפו כמות.</div>
+      <button class="btn btn-accent" style="width:100%; margin-top:10px;" id="fdbFillBtn" onclick="fillMealFromFoodDb()" disabled>
+        <span data-i18n="foodDbFillFormBtn">✓ מלא בטופס הארוחה</span>
+      </button>
+    </div>
+
+    <button class="modal-close" onclick="closeFoodDb()" data-i18n="cancelBtn">ביטול</button>
   </div>
 </div>
 

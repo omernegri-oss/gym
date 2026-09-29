@@ -301,6 +301,21 @@ const translations = {
     visionFailedFood: 'הניתוח נכשל. נסו שוב או הוסיפו את הארוחה ידנית.',
     visionUseBtn: '✓ מלא בטופס',
     mealFilledFromPhotoToast: 'הנתונים מולאו מהתמונה — בדקו ושמרו',
+    /* food database search */
+    foodDbBtn: '🔍 חפש במאגר מזונות', foodDbTitle: 'חיפוש במאגר מזונות',
+    foodDbSource: 'מבוסס על מאגר צמרת, משרד הבריאות — 4,624 מזונות ל־100 גרם.',
+    foodDbSearchPlaceholder: 'לדוגמה: קוטג׳, חזה עוף, אורז',
+    foodDbGramsLabel: 'כמות בגרמים', foodDbPerLabel: 'ל-100 גרם:', foodDbPer100: 'קק״ל ל-100 ג׳',
+    foodDbAddToCart: '＋ הוסף לסל', foodDbCartTitle: 'הסל שלי',
+    foodDbCartEmpty: 'הסל ריק. חפשו מזון והוסיפו כמות.',
+    foodDbFillFormBtn: '✓ מלא בטופס הארוחה',
+    foodDbCatAll: 'הכל', foodDbCat1: 'חלב ומוצריו', foodDbCat2: 'בשר, עוף ודגים', foodDbCat3: 'ביצים',
+    foodDbCat4: 'קטניות ואגוזים', foodDbCat5: 'דגנים ומאפים', foodDbCat6: 'פירות', foodDbCat7: 'ירקות',
+    foodDbCat8: 'שומנים', foodDbCat9: 'מתוקים ומשקאות',
+    foodDbPrompt: 'הקלידו שם מזון או בחרו קטגוריה.',
+    foodDbCountFound: 'נמצאו {n} מזונות.', foodDbCountMany: 'נמצאו {n} מזונות, מוצגים {limit} הראשונים.',
+    foodDbNoResults: 'לא נמצא מזון כזה. נסו מילה אחרת.',
+    foodDbLoading: 'טוען את מאגר המזונות…', foodDbLoadFailed: 'טעינת מאגר המזונות נכשלה. נסו שוב.',
     /* profiles */
     profilesTitle: 'פרופילים', profileSwitchBtn: '👤 החלף פרופיל', newProfileBtn: '＋ פרופיל חדש',
     profileNamePlaceholder: 'שם הפרופיל', profileCreatedToast: 'הפרופיל נוצר',
@@ -444,6 +459,21 @@ const translations = {
     visionFailedFood: 'Analysis failed. Try again or add the meal manually.',
     visionUseBtn: '✓ Fill in the form',
     mealFilledFromPhotoToast: 'Filled in from the photo — review and save',
+    /* food database search — food names stay in Hebrew (the source dataset), everything else translates */
+    foodDbBtn: '🔍 Search food database', foodDbTitle: 'Food database search',
+    foodDbSource: 'Based on Tzameret, the Israeli Ministry of Health database — 4,624 foods per 100g.',
+    foodDbSearchPlaceholder: 'e.g. cottage cheese, chicken breast, rice',
+    foodDbGramsLabel: 'Amount in grams', foodDbPerLabel: 'Per 100g:', foodDbPer100: 'kcal per 100g',
+    foodDbAddToCart: '＋ Add to cart', foodDbCartTitle: 'My cart',
+    foodDbCartEmpty: 'Cart is empty. Search a food and pick an amount.',
+    foodDbFillFormBtn: '✓ Fill in the meal form',
+    foodDbCatAll: 'All', foodDbCat1: 'Dairy', foodDbCat2: 'Meat, poultry & fish', foodDbCat3: 'Eggs',
+    foodDbCat4: 'Legumes & nuts', foodDbCat5: 'Grains & baked goods', foodDbCat6: 'Fruit', foodDbCat7: 'Vegetables',
+    foodDbCat8: 'Fats', foodDbCat9: 'Sweets & drinks',
+    foodDbPrompt: 'Type a food name or pick a category.',
+    foodDbCountFound: '{n} foods found.', foodDbCountMany: '{n} foods found, showing the first {limit}.',
+    foodDbNoResults: 'No matching food. Try another word.',
+    foodDbLoading: 'Loading the food database…', foodDbLoadFailed: 'Failed to load the food database. Try again.',
     profilesTitle: 'Profiles', profileSwitchBtn: '👤 Switch profile', newProfileBtn: '＋ New profile',
     profileNamePlaceholder: 'Profile name', profileCreatedToast: 'Profile created',
     profileSwitchedToast: 'Profile switched', profileDeleteConfirm: 'Delete this profile and all its data?',
@@ -2635,6 +2665,273 @@ function closeExerciseInfo(){
   infoModalExId = null;
 }
 
+/* ---------- food database search (Nutrition screen) ---------------------
+   An offline lookup against Tzameret — the Israeli Ministry of Health's
+   national nutrition database, ~4,600 foods with values per 100g. No AI, no
+   network call: a plain search over data that ships with the app. The
+   dataset is large (~650KB) and only useful to someone who opens this
+   screen, so it is lazy-loaded exactly like vendor/jsqr.js — never paid for
+   on first paint, fetched once and cached after.
+   Row shape (see vendor/food-db.js): [name_he, category(1-9), kcal, protein,
+   carbs, fat, fiber|null, sugar|null, sodium|null, name_en]. */
+let foodDB = null;
+let foodDbKeys = null;      // precomputed normalized search key per row, built once on load
+let foodDbLoader = null;
+
+function loadFoodDB(){
+  if(foodDB) return Promise.resolve(foodDB);
+  if(window.FOOD_DB){ foodDB = window.FOOD_DB; buildFoodDbKeys(); return Promise.resolve(foodDB); }
+  if(foodDbLoader) return foodDbLoader;
+  foodDbLoader = new Promise(function(resolve, reject){
+    const el = document.createElement('script');
+    el.src = 'vendor/food-db.js';
+    el.onload = function(){
+      if(window.FOOD_DB){ foodDB = window.FOOD_DB; buildFoodDbKeys(); resolve(foodDB); }
+      else { foodDbLoader = null; reject(new Error('no data')); }
+    };
+    el.onerror = function(){ foodDbLoader = null; reject(new Error('load failed')); };
+    document.head.appendChild(el);
+  });
+  return foodDbLoader;
+}
+function buildFoodDbKeys(){
+  foodDbKeys = foodDB.map(function(r){ return normFood(r[0] + ' ' + (r[9] || '')); });
+}
+
+/* Same normalization the source dataset's own search used: fold quote
+   variants, strip punctuation, collapse whitespace, lowercase - so "קוטג'"
+   and "קוטג׳" match the same query. */
+function normFood(s){
+  return String(s).toLowerCase()
+    .replace(/[׳'"״`]/g, '')
+    .replace(/[,()\-\/]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+const FOOD_CAT_KEY = { 1:'foodDbCat1', 2:'foodDbCat2', 3:'foodDbCat3', 4:'foodDbCat4', 5:'foodDbCat5',
+                        6:'foodDbCat6', 7:'foodDbCat7', 8:'foodDbCat8', 9:'foodDbCat9' };
+const FOOD_CATS = [1,2,3,4,5,6,7,8,9];
+const FOOD_PRESET_GRAMS = [30, 50, 100, 150, 200, 250];
+const FOOD_RESULT_LIMIT = 60;
+
+let fdbCategory = null;   // null = all categories
+let fdbPicked = null;     // { name, k, p, c, f } for whichever result is being quantified
+let fdbCart = [];         // [{ name, g, k, p, c, f }] accumulated for one meal
+let fdbSearchTimer = null;
+
+async function openFoodDb(){
+  const modal = document.getElementById('foodDbModal');
+  if(!modal) return;
+  fdbCategory = null;
+  fdbPicked = null;
+  fdbCart = [];
+  document.getElementById('fdbSearch').value = '';
+  document.getElementById('fdbPicker').style.display = 'none';
+  renderFoodDbCats();
+  renderFoodDbCart();
+  modal.classList.add('show');
+  const results = document.getElementById('fdbResults');
+  if(foodDB){
+    renderFoodDbResults();
+  } else {
+    results.innerHTML = '<div class="log-empty">' + esc(t('foodDbLoading')) + '</div>';
+    try { await loadFoodDB(); renderFoodDbResults(); }
+    catch(e){ results.innerHTML = '<div class="vision-warn">' + esc(t('foodDbLoadFailed')) + '</div>'; }
+  }
+}
+function closeFoodDb(){
+  const m = document.getElementById('foodDbModal');
+  if(m) m.classList.remove('show');
+  clearTimeout(fdbSearchTimer);
+}
+
+/* Typing triggers a scan of the whole dataset; debouncing keeps that off
+   every single keystroke, same 120ms the source tool used. */
+function scheduleFoodDbSearch(){
+  clearTimeout(fdbSearchTimer);
+  fdbSearchTimer = setTimeout(renderFoodDbResults, 120);
+}
+
+function renderFoodDbCats(){
+  const c = document.getElementById('fdbCats');
+  if(!c) return;
+  c.innerHTML =
+    '<button type="button" class="foodDb-chip' + (fdbCategory === null ? ' on' : '') +
+      '" onclick="setFoodDbCategory(null)">' + esc(t('foodDbCatAll')) + '</button>' +
+    FOOD_CATS.map(function(cat){
+      return '<button type="button" class="foodDb-chip' + (fdbCategory === cat ? ' on' : '') +
+        '" onclick="setFoodDbCategory(' + cat + ')">' + esc(t(FOOD_CAT_KEY[cat])) + '</button>';
+    }).join('');
+}
+function setFoodDbCategory(cat){
+  fdbCategory = cat;
+  renderFoodDbCats();
+  renderFoodDbResults();
+}
+
+function renderFoodDbResults(){
+  const out = document.getElementById('fdbResults');
+  const countEl = document.getElementById('fdbCount');
+  if(!out || !foodDB) return;
+  const q = normFood(document.getElementById('fdbSearch').value);
+  const words = q ? q.split(' ') : [];
+
+  if(!q && fdbCategory === null){
+    countEl.textContent = t('foodDbPrompt');
+    out.innerHTML = '';
+    return;
+  }
+
+  const matches = [];
+  for(let i = 0; i < foodDB.length; i++){
+    if(fdbCategory !== null && foodDB[i][1] !== fdbCategory) continue;
+    if(words.length){
+      const key = foodDbKeys[i];
+      let hit = true;
+      for(let w = 0; w < words.length; w++){
+        if(key.indexOf(words[w]) === -1){ hit = false; break; }
+      }
+      if(!hit) continue;
+    }
+    matches.push(i);
+  }
+  if(q){
+    matches.sort(function(a, b){
+      const as = foodDbKeys[a].indexOf(words[0]) === 0 ? 0 : 1;
+      const bs = foodDbKeys[b].indexOf(words[0]) === 0 ? 0 : 1;
+      return as - bs || foodDB[a][0].length - foodDB[b][0].length;
+    });
+  }
+
+  countEl.textContent = matches.length
+    ? (matches.length > FOOD_RESULT_LIMIT
+        ? t('foodDbCountMany').replace('{n}', matches.length.toLocaleString()).replace('{limit}', FOOD_RESULT_LIMIT)
+        : t('foodDbCountFound').replace('{n}', matches.length.toLocaleString()))
+    : '';
+
+  if(!matches.length){
+    out.innerHTML = '<div class="log-empty">' + esc(t('foodDbNoResults')) + '</div>';
+    return;
+  }
+  out.innerHTML = matches.slice(0, FOOD_RESULT_LIMIT).map(function(idx){
+    const r = foodDB[idx];
+    return '<div class="profile-row" onclick="pickFoodDbItem(' + idx + ')">' +
+      '<div class="profile-av">🍽️</div>' +
+      '<div class="profile-nm">' + esc(r[0]) +
+        '<div class="profile-meta">' + esc(t('macroProtein')) + ' ' + num(r[3]).toFixed(1) + ' · ' +
+          esc(t('macroCarbs')) + ' ' + num(r[4]).toFixed(1) + ' · ' + esc(t('macroFats')) + ' ' + num(r[5]).toFixed(1) +
+        '</div>' +
+      '</div>' +
+      '<div class="foodDb-kcal"><b>' + Math.round(num(r[2])) + '</b><span>' + esc(t('foodDbPer100')) + '</span></div>' +
+    '</div>';
+  }).join('');
+}
+
+function pickFoodDbItem(idx){
+  const r = foodDB[idx];
+  if(!r) return;
+  fdbPicked = { name: r[0], k: num(r[2]), p: num(r[3]), c: num(r[4]), f: num(r[5]) };
+  document.getElementById('fdbPickName').textContent = fdbPicked.name;
+  document.getElementById('fdbPickPer').textContent =
+    t('foodDbPerLabel') + ' ' + Math.round(fdbPicked.k) + ' ' + t('calUnitLabel');
+  document.getElementById('fdbQty').value = 100;
+  document.getElementById('fdbPresets').innerHTML = FOOD_PRESET_GRAMS.map(function(g){
+    return '<button type="button" class="foodDb-chip" onclick="setFoodDbQty(' + g + ')">' + g + '</button>';
+  }).join('');
+  document.getElementById('fdbPicker').style.display = '';
+  updateFoodDbPreview();
+  document.getElementById('fdbPicker').scrollIntoView({ behavior:'smooth', block:'nearest' });
+}
+function setFoodDbQty(g){
+  document.getElementById('fdbQty').value = g;
+  updateFoodDbPreview();
+}
+function foodDbGrams(){
+  return Math.max(0, num(document.getElementById('fdbQty').value));
+}
+function updateFoodDbPreview(){
+  if(!fdbPicked) return;
+  const ratio = foodDbGrams() / 100;
+  document.getElementById('fdbPreviewKcal').innerHTML =
+    Math.round(fdbPicked.k * ratio) + ' <span>' + esc(t('calUnitLabel')) + '</span>';
+  document.getElementById('fdbPreviewMac').textContent =
+    t('macroProtein') + ' ' + (fdbPicked.p * ratio).toFixed(1) + t('gramUnit') + ' · ' +
+    t('macroCarbs') + ' ' + (fdbPicked.c * ratio).toFixed(1) + t('gramUnit') + ' · ' +
+    t('macroFats') + ' ' + (fdbPicked.f * ratio).toFixed(1) + t('gramUnit');
+}
+function cancelFoodDbPick(){
+  fdbPicked = null;
+  document.getElementById('fdbPicker').style.display = 'none';
+}
+
+function addFoodDbToCart(){
+  if(!fdbPicked) return;
+  const g = foodDbGrams();
+  if(g <= 0) return;
+  fdbCart.push({ name: fdbPicked.name, g: g, k: fdbPicked.k, p: fdbPicked.p, c: fdbPicked.c, f: fdbPicked.f });
+  cancelFoodDbPick();
+  renderFoodDbCart();
+}
+function removeFoodDbCartItem(i){
+  fdbCart.splice(i, 1);
+  renderFoodDbCart();
+}
+function foodDbCartTotals(){
+  const totals = { k:0, p:0, c:0, f:0 };
+  fdbCart.forEach(function(item){
+    const r = item.g / 100;
+    totals.k += item.k * r; totals.p += item.p * r; totals.c += item.c * r; totals.f += item.f * r;
+  });
+  return totals;
+}
+function renderFoodDbCart(){
+  const list = document.getElementById('fdbCart');
+  const empty = document.getElementById('fdbCartEmpty');
+  const fillBtn = document.getElementById('fdbFillBtn');
+  if(!list) return;
+  if(fdbCart.length === 0){
+    list.innerHTML = '';
+    empty.style.display = '';
+    fillBtn.disabled = true;
+    return;
+  }
+  empty.style.display = 'none';
+  fillBtn.disabled = false;
+  list.innerHTML = fdbCart.map(function(item, i){
+    const r = item.g / 100;
+    return '<div class="foodDb-cart-row">' +
+      '<div class="info"><b>' + esc(item.name) + '</b><span>' + item.g + ' ' + esc(t('gramUnit')) + '</span></div>' +
+      '<div class="kc">' + Math.round(item.k * r) + ' ' + esc(t('calUnitLabel')) + '</div>' +
+      '<button class="x" style="width:28px;height:28px;border-radius:8px;border:0;background:#232323;color:#6f6f6f;cursor:pointer;" ' +
+        'onclick="removeFoodDbCartItem(' + i + ')" aria-label="' + esc(t('deleteAction')) + '">✕</button>' +
+    '</div>';
+  }).join('');
+}
+
+/* Sums the whole cart into one meal and hands off to the existing meal
+   form - the same shape and the same hand-off fillMealFromVision() already
+   uses. This never writes meals[] directly, so the review-before-save step
+   the rest of the app relies on is never skipped here either. */
+function fillMealFromFoodDb(){
+  if(fdbCart.length === 0) return;
+  const totals = foodDbCartTotals();
+  const name = fdbCart.length === 1 ? fdbCart[0].name : fdbCart.map(function(i){ return i.name; }).join(' + ');
+  closeFoodDb();
+  switchScreen('nutrition');
+  editingMealIndex = null;
+  toggleMealForm(true);
+  document.getElementById('mealName').value = name;
+  document.getElementById('mealCal').value = Math.round(totals.k);
+  document.getElementById('mealProtein').value = Math.round(totals.p * 10) / 10;
+  document.getElementById('mealCarbs').value = Math.round(totals.c * 10) / 10;
+  updateFormLabels();
+  const f = document.getElementById('mealForm');
+  f.scrollIntoView({ behavior:'smooth', block:'center' });
+  flashToast(t('mealFilledFromPhotoToast'));
+  fdbCart = [];
+}
+
 /* Food photo → estimated macros. The meal model only ever stored
    {name, tag, cal, protein, carbs} — manual entry has no fat field either,
    the daily summary derives fat from calories. Rather than widen that model
@@ -2850,11 +3147,12 @@ document.addEventListener('input', function(e){
 document.addEventListener('keydown', function(e){
   if(e.key !== 'Escape') return;
   closeSidebar();
-  ['profileModal','plateModal','camModal','sessionExModal','machineInfoModal'].forEach(function(id){
+  ['profileModal','plateModal','camModal','sessionExModal','machineInfoModal','foodDbModal'].forEach(function(id){
     const m = document.getElementById(id);
     if(m && m.classList.contains('show')){
       m.classList.remove('show');
       if(id === 'camModal'){ clearInterval(qrScanHandle); qrScanHandle = null; stopCamStream(); }
+      if(id === 'foodDbModal') clearTimeout(fdbSearchTimer);
     }
   });
 });
