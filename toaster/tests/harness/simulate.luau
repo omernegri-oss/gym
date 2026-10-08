@@ -441,6 +441,19 @@ for _ = 1, 40 do
 end
 check("butter shield activated", shieldSeen)
 check("Bob burnt in the coils", players.Bob:GetAttribute("IsCharcoal") == true, `heat {players.Bob:GetAttribute("Heat")}`)
+local bobVisual = players.Bob.Character and players.Bob.Character:FindFirstChild("BreadVisual")
+check(
+	"charcoal face: ember eyes and a frown",
+	bobVisual ~= nil and bobVisual:GetAttribute("Expression") == "Charcoal",
+	tostring(bobVisual and bobVisual:GetAttribute("Expression"))
+)
+local emberVisible = false
+for _, part in bobVisual and bobVisual:GetChildren() or {} do
+	if part.Name == "EmberEye" and part.Transparency < 1 then
+		emberVisible = true
+	end
+end
+check("ember eyes visible on charcoal", emberVisible)
 check("Dan left without breaking the round", players.Dan.Parent == nil and phase() ~= "LOBBY")
 
 while phase() ~= "LAUNCH_PHASE" do
@@ -473,6 +486,13 @@ while phase() ~= "RESULTS" do
 end
 local results = remoteEvents(nil, "RoundEvent", "Results")
 check("results sent", #results == 1 and #results[1].args[2].Rows >= 3, `rows {results[1] and #results[1].args[2].Rows}`)
+check("round awards handed out", results[1] and #results[1].args[2].Awards >= 2, `awards {results[1] and #results[1].args[2].Awards}`)
+local aliceVisual = players.Alice.Character and players.Alice.Character:FindFirstChild("BreadVisual")
+check(
+	"golden survivors grin",
+	aliceVisual ~= nil and aliceVisual:GetAttribute("Expression") == "Golden",
+	tostring(aliceVisual and aliceVisual:GetAttribute("Expression"))
+)
 local mainUI = players.Alice:FindFirstChild("PlayerGui"):FindFirstChild("MainUI")
 check("client UI built", mainUI ~= nil and mainUI:FindFirstChild("Timer") ~= nil and mainUI:FindFirstChild("Heat") ~= nil)
 Mock.Advance(0.5)
@@ -600,6 +620,11 @@ check(
 	DataManager.Get(players.Fran).Statistics.VintageQuestDone == 1 and DataManager.Get(players.Fran).Achievements.Archaeologist == true
 )
 check("four rounds completed", roundState:GetAttribute("RoundNumber") == 4 and #remoteEvents(nil, "RoundEvent", "Results") == 4)
+check(
+	"survival streak tracked",
+	(players.Alice:GetAttribute("Streak") or 0) >= 1 and DataManager.Get(players.Alice).Statistics.BestStreak >= 1,
+	tostring(players.Alice:GetAttribute("Streak"))
+)
 check(
 	"rounds played counted once each",
 	DataManager.Get(players.Alice).Statistics.RoundsPlayed == 4,

@@ -77,6 +77,7 @@ local function publishAttributes(player: Player, data: any)
 	player:SetAttribute(Constants.Attr.Level, Progression.LevelForXP(data.XP, Config.Progression.LevelXP))
 	player:SetAttribute(Constants.Attr.Bread, data.EquippedBread)
 	player:SetAttribute(Constants.Attr.Title, data.EquippedTitle)
+	player:SetAttribute(Constants.Attr.Streak, data.Statistics.SurvivalStreak)
 end
 
 function DataManager.Init(registry)

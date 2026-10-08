@@ -47,6 +47,13 @@
       }
     },
 
+    "Lighting": {
+      "$properties": {
+        "Technology": "Future",
+        "ShadowSoftness": 0.25
+      }
+    },
+
     "Players": {
       "$properties": {
         "CharacterAutoLoads": false

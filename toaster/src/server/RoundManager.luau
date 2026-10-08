@@ -148,7 +148,11 @@ local function runRewardsAndResults()
 	task.wait(ROUND.RewardsDuration)
 
 	setPhase(PHASES.Results, ROUND.ResultsDuration)
-	services.Messaging.Round(nil, "Results", { Round = roundNumber, Rows = services.RewardManager.BuildResults() })
+	services.Messaging.Round(nil, "Results", {
+		Round = roundNumber,
+		Rows = services.RewardManager.BuildResults(),
+		Awards = services.RewardManager.LastAwards(),
+	})
 	task.wait(ROUND.ResultsDuration)
 end
 

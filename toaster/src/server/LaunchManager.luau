@@ -131,6 +131,7 @@ function LaunchManager.LaunchAll()
 		if root and humanoid and character then
 			-- Survival is decided at the moment of the POP.
 			session.Survived = not session.IsCharcoal
+			session.LaunchHeat = session.Heat
 			if session.Survived then
 				session.Golden = true
 				character:SetAttribute(Constants.CharAttr.Golden, true)

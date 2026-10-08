@@ -165,14 +165,46 @@ local function folder(parent: Instance, name: string): Folder
 	return f
 end
 
+local function lightingEffect(className: string, name: string, props: { [string]: any })
+	local existing = Lighting:FindFirstChild(name)
+	if existing then
+		existing:Destroy()
+	end
+	local effect = Instance.new(className)
+	effect.Name = name
+	for key, value in props do
+		(effect :: any)[key] = value
+	end
+	effect.Parent = Lighting
+end
+
+-- Warm afternoon kitchen light with soft haze, bloom on the glowing coils and
+-- a colour grade ("HeatGrade") the client warms up while the toaster is on.
 local function setupLighting()
-	Lighting.ClockTime = 14
-	Lighting.Brightness = 2.2
-	Lighting.Ambient = Color3.fromRGB(90, 80, 70)
-	Lighting.OutdoorAmbient = Color3.fromRGB(150, 135, 120)
-	Lighting.EnvironmentDiffuseScale = 0.4
-	Lighting.EnvironmentSpecularScale = 0.4
+	Lighting.ClockTime = 15.2
+	Lighting.Brightness = 2.6
+	Lighting.Ambient = Color3.fromRGB(70, 60, 54)
+	Lighting.OutdoorAmbient = Color3.fromRGB(140, 126, 112)
+	Lighting.EnvironmentDiffuseScale = 0.8
+	Lighting.EnvironmentSpecularScale = 0.9
+	Lighting.ExposureCompensation = 0.15
 	Lighting.GlobalShadows = true
+	lightingEffect("Atmosphere", "KitchenAir", {
+		Density = 0.28,
+		Offset = 0.2,
+		Color = Color3.fromRGB(255, 236, 214),
+		Decay = Color3.fromRGB(196, 150, 112),
+		Glare = 0.25,
+		Haze = 1.4,
+	})
+	lightingEffect("BloomEffect", "Bloom", { Intensity = 0.55, Size = 28, Threshold = 1.4 })
+	lightingEffect("ColorCorrectionEffect", "HeatGrade", {
+		Brightness = 0.02,
+		Contrast = 0.08,
+		Saturation = 0.14,
+		TintColor = Color3.fromRGB(255, 248, 240),
+	})
+	lightingEffect("SunRaysEffect", "SunRays", { Intensity = 0.05, Spread = 0.55 })
 end
 
 local function buildKitchen(world: Folder)
@@ -206,6 +238,127 @@ local function buildKitchen(world: Folder)
 		Size = Vector3.new(70, 22, 40),
 		CFrame = CFrame.new(-120, 25, 260),
 		Color = C.Butter,
+	})
+
+	-- tile grout on the backsplash
+	for y = 20, 300, 20 do
+		part(world, {
+			Name = "Grout",
+			Size = Vector3.new(1600, 0.8, 1),
+			CFrame = CFrame.new(0, y, -499.6),
+			Color = Color3.fromRGB(196, 188, 172),
+			CanCollide = false,
+			CastShadow = false,
+		})
+	end
+	for x = -780, 780, 40 do
+		part(world, {
+			Name = "Grout",
+			Size = Vector3.new(0.8, 320, 1),
+			CFrame = CFrame.new(x, 160, -499.6),
+			Color = Color3.fromRGB(196, 188, 172),
+			CanCollide = false,
+			CastShadow = false,
+		})
+	end
+
+	-- a sunny window over the landing zone
+	part(world, {
+		Name = "WindowFrame",
+		Size = Vector3.new(260, 170, 4),
+		CFrame = CFrame.new(380, 170, -498),
+		Color = C.Cream,
+	})
+	part(world, {
+		Name = "WindowSky",
+		Size = Vector3.new(236, 146, 4),
+		CFrame = CFrame.new(380, 170, -497),
+		Color = Color3.fromRGB(150, 205, 245),
+		Material = Enum.Material.Neon,
+	})
+	for _, bar in { { 380, 170, 6, 146 }, { 380, 170, 236, 6 } } do
+		part(world, {
+			Name = "WindowBar",
+			Size = Vector3.new(bar[3], bar[4], 6),
+			CFrame = CFrame.new(bar[1], bar[2], -495),
+			Color = C.Cream,
+		})
+	end
+
+	-- upper cabinets
+	for i = 0, 3 do
+		local x = -700 + i * 150
+		part(world, {
+			Name = "Cabinet",
+			Size = Vector3.new(140, 110, 60),
+			CFrame = CFrame.new(x, 330, -470),
+			Color = Color3.fromRGB(122, 158, 146),
+		})
+		part(world, {
+			Name = "CabinetKnob",
+			Size = Vector3.new(4, 4, 4),
+			CFrame = CFrame.new(x + 50, 300, -438),
+			Shape = Enum.PartType.Ball,
+			Color = C.Gold,
+			Material = Enum.Material.Metal,
+		})
+	end
+
+	-- utensil crock with a giant wooden spoon and spatula
+	disc(world, "Crock", Vector3.new(420, 35, -380), 26, 70, Color3.fromRGB(70, 110, 160), Enum.Material.Marble)
+	local spoon = part(world, {
+		Name = "SpoonHandle",
+		Size = Vector3.new(6, 150, 4),
+		CFrame = CFrame.new(410, 110, -385) * CFrame.Angles(0, 0, math.rad(12)),
+		Color = Color3.fromRGB(196, 150, 96),
+		Material = Enum.Material.Wood,
+	})
+	part(world, {
+		Name = "SpoonBowl",
+		Size = Vector3.new(26, 36, 8),
+		CFrame = spoon.CFrame * CFrame.new(0, 88, 0),
+		Color = Color3.fromRGB(196, 150, 96),
+		Material = Enum.Material.Wood,
+		Shape = Enum.PartType.Ball,
+	})
+	part(world, {
+		Name = "Spatula",
+		Size = Vector3.new(5, 140, 3),
+		CFrame = CFrame.new(432, 105, -375) * CFrame.Angles(0, 0, math.rad(-10)),
+		Color = C.Charcoal,
+	})
+
+	-- fruit bowl
+	disc(world, "FruitBowl", Vector3.new(-380, 14, -300), 60, 28, Color3.fromRGB(230, 120, 90), Enum.Material.Marble)
+	for i, apple in { { -400, -310 }, { -365, -290 }, { -385, -275 }, { -360, -320 } } do
+		part(world, {
+			Name = "Apple",
+			Size = Vector3.one * 30,
+			CFrame = CFrame.new(apple[1], 38 + (i % 2) * 6, apple[2]),
+			Shape = Enum.PartType.Ball,
+			Color = if i % 2 == 0 then Color3.fromRGB(210, 40, 40) else Color3.fromRGB(150, 200, 60),
+		})
+	end
+
+	-- salt and pepper
+	disc(world, "Salt", Vector3.new(80, 22, -200), 9, 44, C.Cream)
+	disc(world, "Pepper", Vector3.new(104, 22, -200), 9, 44, C.Charcoal)
+
+	-- butter knife resting by the landing board
+	part(world, {
+		Name = "KnifeBlade",
+		Size = Vector3.new(120, 1.2, 16),
+		CFrame = CFrame.new(330, 0.8, 150) * CFrame.Angles(0, math.rad(8), 0),
+		Color = C.Chrome,
+		Material = Enum.Material.Metal,
+		Reflectance = 0.25,
+	})
+	part(world, {
+		Name = "KnifeHandle",
+		Size = Vector3.new(80, 8, 14),
+		CFrame = CFrame.new(228, 4, 164) * CFrame.Angles(0, math.rad(8), 0),
+		Color = Color3.fromRGB(60, 40, 30),
+		Material = Enum.Material.Wood,
 	})
 end
 
@@ -365,6 +518,37 @@ local function buildToaster(folders: { [string]: Folder }): any
 				Group = GROUPS.Toaster,
 			})
 			CollectionService:AddTag(coil, Constants.Tags.Coil)
+			-- heat shimmer + sparks, switched on by clients while the toaster is on
+			local shimmer = Instance.new("ParticleEmitter")
+			shimmer.Name = "HeatShimmer"
+			shimmer.Enabled = false
+			shimmer.Color = ColorSequence.new(Color3.fromRGB(255, 200, 150), Color3.fromRGB(255, 120, 60))
+			shimmer.LightEmission = 0.5
+			shimmer.Transparency = NumberSequence.new(0.8, 1)
+			shimmer.Size = NumberSequence.new(1.5, 4)
+			shimmer.Lifetime = NumberRange.new(1, 1.8)
+			shimmer.Rate = 8
+			shimmer.Speed = NumberRange.new(4, 8)
+			shimmer.SpreadAngle = Vector2.new(15, 15)
+			shimmer.EmissionDirection = Enum.NormalId.Top
+			shimmer.Parent = coil
+			CollectionService:AddTag(shimmer, Constants.Tags.CoilFX)
+			if row % 2 == 1 then
+				local sparks = Instance.new("ParticleEmitter")
+				sparks.Name = "Sparks"
+				sparks.Enabled = false
+				sparks.Color = ColorSequence.new(Color3.fromRGB(255, 230, 120), Color3.fromRGB(255, 120, 30))
+				sparks.LightEmission = 1
+				sparks.Size = NumberSequence.new(0.22, 0)
+				sparks.Lifetime = NumberRange.new(0.35, 0.8)
+				sparks.Rate = 4
+				sparks.Speed = NumberRange.new(10, 22)
+				sparks.SpreadAngle = Vector2.new(70, 70)
+				sparks.Acceleration = Vector3.new(0, -60, 0)
+				sparks.EmissionDirection = if sz > 0 then Enum.NormalId.Front else Enum.NormalId.Back
+				sparks.Parent = coil
+				CollectionService:AddTag(sparks, Constants.Tags.CoilFX)
+			end
 		end
 		for i = -2, 2 do
 			part(toaster, {
@@ -441,6 +625,95 @@ local function buildToaster(folders: { [string]: Folder }): any
 	knob:SetAttribute("DownY", knobDownY)
 	local dial = disc(toaster, "Dial", Vector3.new(-leverX, floorY + 22, outerZ + 1), 6, 2, C.Charcoal)
 	dial.CFrame = CFrame.new(-leverX, floorY + 22, outerZ + 1) * Z_AXIS
+	-- browning-level ticks around the dial, and the pointer turned to "6"
+	for i = 0, 5 do
+		local angle = math.rad(-135 + i * 54)
+		part(toaster, {
+			Name = "DialTick",
+			Size = Vector3.new(0.6, 2, 0.4),
+			CFrame = CFrame.new(-leverX + math.sin(angle) * 8, floorY + 22 + math.cos(angle) * 8, outerZ + 0.3)
+				* CFrame.Angles(0, 0, -angle),
+			Color = C.Charcoal,
+			CanCollide = false,
+		})
+	end
+	part(toaster, {
+		Name = "DialPointer",
+		Size = Vector3.new(1.2, 5, 0.6),
+		CFrame = CFrame.new(-leverX, floorY + 22, outerZ + 2.2) * CFrame.Angles(0, 0, math.rad(-135)) * CFrame.new(0, 2.5, 0),
+		Color = C.Cream,
+		CanCollide = false,
+	})
+	local led = part(toaster, {
+		Name = "PowerLight",
+		Size = Vector3.new(2.2, 2.2, 2.2),
+		CFrame = CFrame.new(-leverX + 14, floorY + 22, outerZ + 0.4),
+		Shape = Enum.PartType.Ball,
+		Color = Color3.fromRGB(70, 20, 16),
+		Material = Enum.Material.Neon,
+		CanCollide = false,
+	})
+	CollectionService:AddTag(led, Constants.Tags.PowerLight)
+
+	-- softened chrome corners
+	for _, sx in { -1, 1 } do
+		for _, sz in { -1, 1 } do
+			part(toaster, {
+				Name = "Bevel",
+				Size = Vector3.new(H + floorY - 2, 7, 7),
+				CFrame = CFrame.new(sx * (outerL - 1.5), (topY + 2) / 2 + 1, sz * (outerW - 1.5)) * UP_AXIS,
+				Shape = Enum.PartType.Cylinder,
+				Color = C.Chrome,
+				Material = Enum.Material.Metal,
+				Reflectance = 0.12,
+				Group = GROUPS.Toaster,
+			})
+		end
+	end
+
+	-- crumb tray drawer at the west end (a hint about what's underneath)
+	local tray = part(toaster, {
+		Name = "CrumbTray",
+		Size = Vector3.new(1.2, 5, 50),
+		CFrame = CFrame.new(-(outerL + 0.6), 6, 0),
+		Color = C.ChromeDark,
+		Material = Enum.Material.Metal,
+		Group = GROUPS.Toaster,
+	})
+	label(tray, Enum.NormalId.Left, "CRUMB TRAY", C.Cream)
+	part(toaster, {
+		Name = "TrayHandle",
+		Size = Vector3.new(2.4, 1.6, 14),
+		CFrame = CFrame.new(-(outerL + 2), 6, 0),
+		Color = C.Charcoal,
+		Group = GROUPS.Toaster,
+	})
+
+	-- power cord snaking to the wall
+	local cordPoints = {
+		Vector3.new(-30, 2, -outerW),
+		Vector3.new(-40, 1.2, -outerW - 30),
+		Vector3.new(-20, 1.2, -outerW - 70),
+		Vector3.new(-50, 1.2, -outerW - 120),
+		Vector3.new(-35, 1.2, -outerW - 170),
+		Vector3.new(-45, 1.2, -496),
+	}
+	for i = 1, #cordPoints - 1 do
+		local a, b = cordPoints[i], cordPoints[i + 1]
+		part(toaster, {
+			Name = "Cord",
+			Size = Vector3.new(2.2, 2.2, (b - a).Magnitude + 1.2),
+			CFrame = CFrame.lookAt((a + b) / 2, b),
+			Color = C.Charcoal,
+			CanCollide = false,
+		})
+	end
+	part(toaster, {
+		Name = "WallPlug",
+		Size = Vector3.new(14, 18, 4),
+		CFrame = CFrame.new(-45, 12, -498),
+		Color = C.Cream,
+	})
 	local brand = part(toaster, {
 		Name = "Brand",
 		Size = Vector3.new(50, 10, 0.2),

@@ -2,6 +2,8 @@
 
 You are a slice of bread trapped inside a giant toaster. Survive the heat, collect crumbs, use butter, avoid chaos, and get launched into the air when the toaster finally pops.
 
+![TOASTER key art](marketing/thumbnail.png)
+
 A complete, playable Roblox prototype. Everything is built from code with no hand-made models: the map, the bread characters, the giant hand, the fork boss, Crumb World and all of the UI.
 
 ## Play it
@@ -28,6 +30,10 @@ Then do the manual steps in [Manual setup](#manual-setup-studio--dashboard).
 | `LAUNCH_PHASE` (4 s) | `3… 2… 1… POP!` Run to the glowing **POP pad**. Anyone who isn't burnt is turned **golden** (+250). |
 | `LANDING_PHASE` | Controlled ballistic launch onto the landing target: JACKPOT 500 / PERFECT 100 / GREAT 50 / GOOD 25 / SAFE 10. The centre of the toaster aims at the bullseye; the POP pad always lands PERFECT or better. |
 | `REWARDS` → `RESULTS` | Crumbs and XP are granted once per player, then the results screen shows. Everyone returns to the lobby. |
+
+**Faces react to the heat:** every bread smiles when fresh, gets uneasy when warm, sweats when very hot and screams at critical heat. Charcoal glares with glowing ember eyes and cracks; golden survivors grin.
+
+**Survival streaks and awards:** surviving rounds in a row multiplies your round crumbs (+10% per extra round, up to +50%). At the end of each round the standout players win MOST CRUMBS, BULLSEYE, CHARCOAL MENACE and COOLEST HEAD (+25 crumbs each).
 
 **Burnt?** At 100 heat you become **Charcoal**: slow, smoking, can't use abilities or spreads, but touching other bread *blackens* them and adds a little heat. Charcoal lasts for the rest of the round and the next one.
 
@@ -135,7 +141,8 @@ These need Roblox Studio or the Creator Dashboard and can't be done from code:
 2. **Avatar type:** *Game Settings → Avatar → R15* (the default). Characters are loaded from a blank `HumanoidDescription`, so player avatars don't matter.
 3. **Audio:** `src/shared/Sounds.luau` uses sounds bundled with the Roblox client (`rbxasset://sounds/…`) as placeholders. Upload your own audio and paste the `rbxassetid://` ids there. Every gameplay moment already has a hook.
 4. **Monetization:** create the VIP game pass and the developer product on the Creator Dashboard, then put their ids in `src/shared/Monetization.luau`. Ids of `0` are hidden in the shop and ignored by the server.
-5. **Thumbnail / icon:** upload separately (see the design canvas).
+5. **Thumbnail / icon:** upload `marketing/thumbnail.png` (1920×1080) and `marketing/icon.png` (512×512) on the Creator Dashboard. They are rendered from the real game scene; see `marketing/render/README.md` to re-render them.
+6. **Lighting:** the project sets `Lighting.Technology = Future` for the glowing coils. On very low-end devices Roblox scales this down automatically.
 
 ## Tuning
 

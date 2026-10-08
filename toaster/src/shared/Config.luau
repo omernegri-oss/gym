@@ -88,6 +88,12 @@ Config.Rewards = {
 	SurvivalXP = 15,
 	LandingXPDivisor = 10,
 	GoldenDuration = 12,
+	-- Surviving rounds in a row boosts round crumbs: +10% per extra round, up to +50%.
+	StreakBonusPerRound = 0.1,
+	StreakMaxSteps = 5,
+	-- End-of-round awards (MOST CRUMBS, BULLSEYE, CHARCOAL MENACE, COOLEST HEAD)
+	AwardCrumbs = 25,
+	BullseyeMinPoints = 50,
 }
 
 Config.Charcoal = {

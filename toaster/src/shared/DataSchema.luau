@@ -17,6 +17,9 @@ local function defaultStatistics()
 		PlayersBlackened = 0,
 		WaffleUnlocked = 0,
 		VintageQuestDone = 0,
+		SurvivalStreak = 0,
+		BestStreak = 0,
+		AwardsWon = 0,
 	}
 end
 

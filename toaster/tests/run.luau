@@ -268,6 +268,30 @@ test("round rewards: survivors earn the golden bonus", function()
 	eq(none.Points, 0)
 end)
 
+test("survival streaks boost crumbs, capped", function()
+	local base = { Participated = true, Survived = true, LandingPoints = 100, CollectedCrumbs = 0 }
+	local first = Progression.RoundReward(base, Config.Rewards)
+	local third = Progression.RoundReward(
+		{ Participated = true, Survived = true, LandingPoints = 100, CollectedCrumbs = 0, Streak = 3 },
+		Config.Rewards
+	)
+	eq(first.StreakMultiplier, 1)
+	near(third.StreakMultiplier, 1 + 2 * Config.Rewards.StreakBonusPerRound, 1e-9)
+	truthy(third.Crumbs > first.Crumbs, "streak pays more")
+	local capped = Progression.StreakMultiplier(99, Config.Rewards)
+	near(capped, 1 + Config.Rewards.StreakMaxSteps * Config.Rewards.StreakBonusPerRound, 1e-9)
+	local burnt = Progression.RoundReward(
+		{ Participated = true, Survived = false, LandingPoints = 100, CollectedCrumbs = 0, Streak = 5 },
+		Config.Rewards
+	)
+	eq(burnt.StreakMultiplier, 1, "no streak bonus when burnt")
+	local awarded = Progression.RoundReward(
+		{ Participated = true, Survived = true, LandingPoints = 100, CollectedCrumbs = 0, Awards = 2 },
+		Config.Rewards
+	)
+	eq(awarded.Crumbs, first.Crumbs + 2 * Config.Rewards.AwardCrumbs, "awards add flat crumbs")
+end)
+
 test("buy checks: owned, level, price", function()
 	eq(Progression.CanBuy(300, 2, 1000, 5, true).Ok, false)
 	eq(Progression.CanBuy(300, 2, 1000, 1, false).Ok, false)

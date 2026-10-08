@@ -46,6 +46,9 @@ export type Session = {
 	LandingPoints: number,
 	RewardGranted: boolean,
 	Reward: any?,
+	RoundBlackens: number,
+	LaunchHeat: number,
+	Awards: { string },
 	Cooldowns: { [string]: number },
 }
 
@@ -87,6 +90,9 @@ local function newSession(player: Player): Session
 		LandingPoints = 0,
 		RewardGranted = false,
 		Reward = nil,
+		RoundBlackens = 0,
+		LaunchHeat = 0,
+		Awards = {},
 		Cooldowns = {},
 	}
 end
@@ -291,6 +297,9 @@ function PlayerManager.ResetRoundState(session: Session)
 	session.LandingPoints = 0
 	session.RewardGranted = false
 	session.Reward = nil
+	session.RoundBlackens = 0
+	session.LaunchHeat = 0
+	session.Awards = {}
 	table.clear(session.Cooldowns)
 
 	local player = session.Player

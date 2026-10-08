@@ -34,6 +34,7 @@ CLASSES = [
     "UIGridLayout", "UIGridStyleLayout", "UILayout", "UIComponent", "UIBase", "UICorner",
     "UIStroke", "UIPadding", "UIScale", "UIGradient", "Camera", "PlayerGui", "BasePlayerGui",
     "PlayerScripts", "LocalScript", "LinearVelocity", "Constraint",
+    "Atmosphere", "PostEffect", "BloomEffect", "ColorCorrectionEffect", "SunRaysEffect",
 ]
 
 

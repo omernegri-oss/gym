@@ -29,6 +29,7 @@ return {
 		Level = "Level",
 		XP = "XP",
 		Title = "Title",
+		Streak = "Streak",
 		DataLoaded = "DataLoaded",
 		CooldownPrefix = "CD_", -- CD_Ability, CD_Jam, CD_Nutella (server time)
 	},
@@ -57,6 +58,8 @@ return {
 		HandPart = "GiantHandPart",
 		PopPad = "PopPad",
 		Pickup = "Pickup",
+		CoilFX = "CoilFX",
+		PowerLight = "PowerLight",
 	},
 
 	CollisionGroups = {

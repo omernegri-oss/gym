@@ -1,59 +1,66 @@
 <roblox version="4">
-  <Item class="Players" referent="0">
+  <Item class="Lighting" referent="0">
+    <Properties>
+      <string name="Name">Lighting</string>
+      <float name="ShadowSoftness">0.25</float>
+      <token name="Technology">4</token>
+    </Properties>
+  </Item>
+  <Item class="Players" referent="1">
     <Properties>
       <string name="Name">Players</string>
       <bool name="CharacterAutoLoads">false</bool>
     </Properties>
   </Item>
-  <Item class="ReplicatedStorage" referent="1">
+  <Item class="ReplicatedStorage" referent="2">
     <Properties>
       <string name="Name">ReplicatedStorage</string>
     </Properties>
-    <Item class="Folder" referent="2">
+    <Item class="Folder" referent="3">
       <Properties>
         <string name="Name">Assets</string>
       </Properties>
     </Item>
-    <Item class="Folder" referent="3">
+    <Item class="Folder" referent="4">
       <Properties>
         <string name="Name">Remotes</string>
       </Properties>
-      <Item class="RemoteEvent" referent="4">
+      <Item class="RemoteEvent" referent="5">
         <Properties>
           <string name="Name">AbilityEvent</string>
         </Properties>
       </Item>
-      <Item class="RemoteEvent" referent="5">
+      <Item class="RemoteEvent" referent="6">
         <Properties>
           <string name="Name">EffectEvent</string>
         </Properties>
       </Item>
-      <Item class="RemoteEvent" referent="6">
+      <Item class="RemoteEvent" referent="7">
         <Properties>
           <string name="Name">InteractionEvent</string>
         </Properties>
       </Item>
-      <Item class="RemoteEvent" referent="7">
+      <Item class="RemoteEvent" referent="8">
         <Properties>
           <string name="Name">RoundEvent</string>
         </Properties>
       </Item>
-      <Item class="RemoteEvent" referent="8">
+      <Item class="RemoteEvent" referent="9">
         <Properties>
           <string name="Name">UIEvent</string>
         </Properties>
       </Item>
     </Item>
-    <Item class="Folder" referent="9">
+    <Item class="Folder" referent="10">
       <Properties>
         <string name="Name">RoundState</string>
       </Properties>
     </Item>
-    <Item class="Folder" referent="10">
+    <Item class="Folder" referent="11">
       <Properties>
         <string name="Name">Shared</string>
       </Properties>
-      <Item class="ModuleScript" referent="11">
+      <Item class="ModuleScript" referent="12">
         <Properties>
           <string name="Name">AbilityDefinitions</string>
           <string name="Source"><![CDATA[--!strict
@@ -94,7 +101,7 @@ return {
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="12">
+      <Item class="ModuleScript" referent="13">
         <Properties>
           <string name="Name">AchievementDefinitions</string>
           <string name="Source"><![CDATA[--!strict
@@ -151,7 +158,7 @@ return {
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="13">
+      <Item class="ModuleScript" referent="14">
         <Properties>
           <string name="Name">BreadDefinitions</string>
           <string name="Source"><![CDATA[--!strict
@@ -243,12 +250,17 @@ return {
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="14">
+      <Item class="ModuleScript" referent="15">
         <Properties>
           <string name="Name">BreadVisuals</string>
           <string name="Source"><![CDATA[-- Procedural bread bodies welded onto a standard humanoid character.
 -- Built from primitive parts so no uploaded meshes are required. The server
 -- builds and updates them; changes replicate to everyone.
+--
+-- Every bread has the same expressive face rig. Face parts are tagged with the
+-- expressions they belong to and SetExpression shows/hides them, so a slice
+-- smiles when fresh, sweats when hot, screams at critical heat and glares with
+-- ember eyes as charcoal.
 
 local Shared = script.Parent
 local HeatMath = require(Shared.HeatMath)
@@ -269,22 +281,42 @@ local HEAT_BIAS = {
 
 -- Height of the hat anchor above the root for each bread.
 local TOP_Y = {
-	Bread = 4.6,
-	Bagel = 4.4,
-	Croissant = 3.4,
-	Waffle = 3.8,
+	Bread = 4.35,
+	Bagel = 4.2,
+	Croissant = 3.75,
+	Waffle = 4.6,
+}
+
+-- Heat state -> facial expression.
+BreadVisuals.ExpressionForState = {
+	Normal = "Happy",
+	Warm = "Uneasy",
+	VeryHot = "Sweaty",
+	Critical = "Panic",
+	Burnt = "Charcoal",
+	Golden = "Golden",
 }
 
 type PartSpec = {
 	name: string,
 	size: Vector3,
 	offset: CFrame,
-	tint: string?, -- "Body" | "Crust" | nil (fixed colour)
+	tint: string?, -- "Body" | "Crust" | "Spot" | nil (fixed colour)
 	color: Color3?,
 	shape: Enum.PartType?,
 	mesh: Vector3?, -- SpecialMesh sphere scale, for ellipsoids
 	material: Enum.Material?,
+	transparency: number?,
+	expr: string?, -- comma list of expressions this part shows in (nil = always)
+	shadow: boolean?,
 }
+
+local INK = Color3.fromRGB(58, 30, 16)
+local MOUTH = Color3.fromRGB(70, 24, 18)
+local TONGUE = Color3.fromRGB(232, 96, 110)
+local BLUSH = Color3.fromRGB(255, 132, 132)
+local SWEAT = Color3.fromRGB(150, 215, 255)
+local EMBER = Color3.fromRGB(255, 120, 30)
 
 -- Every visual part is welded to an invisible "BreadCore", which is joined to
 -- the HumanoidRootPart by a single Weld ("BreadJoint"). Clients animate that
@@ -296,6 +328,7 @@ local function makePart(root: BasePart, model: Model, spec: PartSpec): BasePart
 	part.Shape = spec.shape or Enum.PartType.Block
 	part.Material = spec.material or Enum.Material.SmoothPlastic
 	part.Color = spec.color or Theme.Colors.Crumb
+	part.Transparency = spec.transparency or 0
 	part.TopSurface = Enum.SurfaceType.Smooth
 	part.BottomSurface = Enum.SurfaceType.Smooth
 	part.CanCollide = false
@@ -303,10 +336,14 @@ local function makePart(root: BasePart, model: Model, spec: PartSpec): BasePart
 	part.CanTouch = false
 	part.Massless = true
 	part.Anchored = false
-	part.CastShadow = true
+	part.CastShadow = spec.shadow ~= false
 	part.CFrame = root.CFrame * spec.offset
 	if spec.tint then
 		part:SetAttribute("Tint", spec.tint)
+	end
+	if spec.expr then
+		part:SetAttribute("Expr", "," .. spec.expr .. ",")
+		part:SetAttribute("BaseTransparency", part.Transparency)
 	end
 	if spec.mesh then
 		local mesh = Instance.new("SpecialMesh")
@@ -322,155 +359,444 @@ local function makePart(root: BasePart, model: Model, spec: PartSpec): BasePart
 	return part
 end
 
-local SIDEWAYS = CFrame.Angles(0, math.rad(90), 0) -- cylinder axis along Z
+local Z_AXIS = CFrame.Angles(0, math.rad(90), 0) -- cylinder axis along Z
+local Y_AXIS = CFrame.Angles(0, 0, math.rad(90)) -- cylinder axis along Y
 
-local function face(specs: { PartSpec }, eyeY: number, eyeX: number, frontZ: number, mouthY: number)
+local function add(specs: { PartSpec }, spec: PartSpec)
+	table.insert(specs, spec)
+end
+
+------------------------------------------------------------------ the face rig
+
+type FaceLayout = {
+	eyeY: number, -- eye centre height
+	eyeX: number, -- half distance between the eyes
+	z: number, -- the face surface (negative = front)
+	mouthY: number,
+	scale: number,
+}
+
+local EYES_OPEN = "Happy,Uneasy,Sweaty,Panic,Golden"
+
+local function face(specs: { PartSpec }, f: FaceLayout)
+	local s = f.scale
+	local z = f.z
 	for _, side in { -1, 1 } do
-		table.insert(specs, {
+		local ex = side * f.eyeX
+		-- eyes
+		add(specs, {
 			name = "Eye",
-			size = Vector3.new(0.95, 0.95, 0.95),
-			offset = CFrame.new(side * eyeX, eyeY, frontZ),
+			size = Vector3.one * 1.05 * s,
+			offset = CFrame.new(ex, f.eyeY, z),
 			shape = Enum.PartType.Ball,
 			color = Color3.new(1, 1, 1),
+			expr = EYES_OPEN,
 		})
-		table.insert(specs, {
+		add(specs, {
 			name = "Pupil",
-			size = Vector3.new(0.42, 0.42, 0.42),
-			offset = CFrame.new(side * eyeX * 0.92, eyeY - 0.08, frontZ - 0.38),
+			size = Vector3.one * 0.5 * s,
+			offset = CFrame.new(ex * 0.94, f.eyeY - 0.05 * s, z - 0.4 * s),
 			shape = Enum.PartType.Ball,
 			color = Theme.Colors.Charcoal,
+			expr = "Happy,Uneasy,Sweaty,Golden",
 		})
-		table.insert(specs, {
+		add(specs, {
+			name = "PupilTiny",
+			size = Vector3.one * 0.26 * s,
+			offset = CFrame.new(ex * 0.98, f.eyeY, z - 0.5 * s),
+			shape = Enum.PartType.Ball,
+			color = Theme.Colors.Charcoal,
+			expr = "Panic",
+		})
+		add(specs, {
+			name = "Glint",
+			size = Vector3.one * 0.17 * s,
+			offset = CFrame.new(ex * 0.94 + 0.13 * s, f.eyeY + 0.12 * s, z - 0.6 * s),
+			shape = Enum.PartType.Ball,
+			color = Color3.new(1, 1, 1),
+			material = Enum.Material.Neon,
+			expr = "Happy,Uneasy,Sweaty,Golden",
+			shadow = false,
+		})
+		-- brows: calm (raised), worried (inner ends up), angry (inner ends down)
+		local browY = f.eyeY + 0.78 * s
+		add(specs, {
 			name = "Brow",
-			size = Vector3.new(0.7, 0.14, 0.12),
-			offset = CFrame.new(side * eyeX, eyeY + 0.72, frontZ - 0.2) * CFrame.Angles(0, 0, math.rad(side * -14)),
-			color = Color3.fromRGB(90, 52, 24),
+			size = Vector3.new(0.78, 0.16, 0.14) * s,
+			offset = CFrame.new(ex, browY + 0.08 * s, z - 0.15 * s) * CFrame.Angles(0, 0, math.rad(side * -6)),
+			color = INK,
+			expr = "Happy,Golden",
+		})
+		add(specs, {
+			name = "Brow",
+			size = Vector3.new(0.8, 0.17, 0.14) * s,
+			offset = CFrame.new(ex, browY, z - 0.15 * s) * CFrame.Angles(0, 0, math.rad(side * -20)),
+			color = INK,
+			expr = "Uneasy,Sweaty,Panic",
+		})
+		add(specs, {
+			name = "Brow",
+			size = Vector3.new(0.85, 0.2, 0.14) * s,
+			offset = CFrame.new(ex, browY - 0.12 * s, z - 0.15 * s) * CFrame.Angles(0, 0, math.rad(side * 24)),
+			color = Color3.fromRGB(10, 8, 7),
+			expr = "Charcoal",
+		})
+		-- charcoal: glowing ember slits instead of eyes
+		add(specs, {
+			name = "EmberEye",
+			size = Vector3.new(0.85, 0.24, 0.15) * s,
+			offset = CFrame.new(ex, f.eyeY - 0.05 * s, z - 0.12 * s) * CFrame.Angles(0, 0, math.rad(side * 14)),
+			color = EMBER,
+			material = Enum.Material.Neon,
+			expr = "Charcoal",
+			shadow = false,
+		})
+		-- blush
+		add(specs, {
+			name = "Blush",
+			size = Vector3.new(0.7, 0.36, 0.12) * s,
+			offset = CFrame.new(side * (f.eyeX + 0.3 * s), f.mouthY + 0.32 * s, z - 0.02),
+			color = BLUSH,
+			mesh = Vector3.one,
+			transparency = 0.35,
+			expr = "Happy,Golden,Uneasy",
+			shadow = false,
 		})
 	end
-	table.insert(specs, {
-		name = "Mouth",
-		size = Vector3.new(0.55, 0.55, 0.2),
-		offset = CFrame.new(0, mouthY, frontZ - 0.05),
-		shape = Enum.PartType.Ball,
-		color = Color3.fromRGB(90, 52, 24),
-		mesh = Vector3.new(1, 1.3, 0.4),
+
+	-- mouths
+	for i = -2, 2 do -- smile: an arc of beads, ends up
+		local x = i * 0.24 * s
+		add(specs, {
+			name = "Smile",
+			size = Vector3.one * 0.24 * s,
+			offset = CFrame.new(x, f.mouthY + (i * i) * 0.045 * s, z - 0.06),
+			shape = Enum.PartType.Ball,
+			color = MOUTH,
+			expr = "Happy",
+		})
+	end
+	add(specs, { -- golden: open grin with teeth
+		name = "Grin",
+		size = Vector3.new(1.15, 0.62, 0.2) * s,
+		offset = CFrame.new(0, f.mouthY - 0.05 * s, z - 0.05),
+		color = MOUTH,
+		mesh = Vector3.one,
+		expr = "Golden",
+	})
+	add(specs, {
+		name = "Teeth",
+		size = Vector3.new(0.8, 0.16, 0.1) * s,
+		offset = CFrame.new(0, f.mouthY + 0.13 * s, z - 0.13),
+		color = Color3.new(1, 1, 1),
+		expr = "Golden",
+	})
+	for i = -2, 2 do -- uneasy: a wobbly line
+		add(specs, {
+			name = "Wobble",
+			size = Vector3.one * 0.2 * s,
+			offset = CFrame.new(i * 0.2 * s, f.mouthY + (if i % 2 == 0 then 0.06 else -0.06) * s, z - 0.06),
+			shape = Enum.PartType.Ball,
+			color = MOUTH,
+			expr = "Uneasy",
+		})
+	end
+	add(specs, { -- sweaty: a nervous "o"
+		name = "MouthO",
+		size = Vector3.new(0.5, 0.66, 0.2) * s,
+		offset = CFrame.new(0, f.mouthY - 0.05 * s, z - 0.05),
+		color = MOUTH,
+		mesh = Vector3.one,
+		expr = "Sweaty",
+	})
+	add(specs, { -- panic: a full scream
+		name = "Scream",
+		size = Vector3.new(0.95, 1.3, 0.2) * s,
+		offset = CFrame.new(0, f.mouthY - 0.25 * s, z - 0.05),
+		color = MOUTH,
+		mesh = Vector3.one,
+		expr = "Panic",
+	})
+	add(specs, {
+		name = "Tongue",
+		size = Vector3.new(0.6, 0.38, 0.12) * s,
+		offset = CFrame.new(0, f.mouthY - 0.62 * s, z - 0.12),
+		color = TONGUE,
+		mesh = Vector3.one,
+		expr = "Panic",
+	})
+	for i = -1, 1 do -- charcoal: a grumpy frown
+		add(specs, {
+			name = "Frown",
+			size = Vector3.one * 0.24 * s,
+			offset = CFrame.new(i * 0.3 * s, f.mouthY - math.abs(i) * 0.14 * s, z - 0.06),
+			shape = Enum.PartType.Ball,
+			color = Color3.fromRGB(10, 8, 7),
+			expr = "Charcoal",
+		})
+	end
+	-- sweat drops
+	add(specs, {
+		name = "Sweat",
+		size = Vector3.new(0.34, 0.5, 0.3) * s,
+		offset = CFrame.new(f.eyeX + 0.85 * s, f.eyeY + 0.75 * s, z - 0.1),
+		color = SWEAT,
+		material = Enum.Material.Glass,
+		mesh = Vector3.one,
+		transparency = 0.15,
+		expr = "Sweaty,Panic",
+	})
+	add(specs, {
+		name = "Sweat",
+		size = Vector3.new(0.3, 0.44, 0.3) * s,
+		offset = CFrame.new(-f.eyeX - 0.8 * s, f.eyeY + 0.55 * s, z - 0.1),
+		color = SWEAT,
+		material = Enum.Material.Glass,
+		mesh = Vector3.one,
+		transparency = 0.15,
+		expr = "Panic",
 	})
 end
+
+-- Glowing cracks for charcoal and a shine streak for golden toast.
+local function surfaceMarks(specs: { PartSpec }, width: number, height: number, centerY: number, z: number)
+	local cracks = {
+		{ -0.32, 0.3, 0.5, 35 },
+		{ 0.3, -0.25, 0.42, -40 },
+		{ 0.18, 0.38, 0.28, 70 },
+		{ -0.28, -0.32, 0.3, -15 },
+	}
+	for _, c in cracks do
+		add(specs, {
+			name = "Crack",
+			size = Vector3.new(width * c[3], 0.1, 0.08),
+			offset = CFrame.new(width * c[1], centerY + height * c[2], z - 0.02) * CFrame.Angles(0, 0, math.rad(c[4])),
+			color = EMBER,
+			material = Enum.Material.Neon,
+			expr = "Charcoal",
+			shadow = false,
+		})
+	end
+	add(specs, {
+		name = "Shine",
+		size = Vector3.new(width * 0.55, 0.22, 0.06),
+		offset = CFrame.new(-width * 0.12, centerY + height * 0.3, z - 0.03) * CFrame.Angles(0, 0, math.rad(32)),
+		color = Color3.new(1, 1, 1),
+		material = Enum.Material.Neon,
+		transparency = 0.25,
+		expr = "Golden",
+		shadow = false,
+	})
+end
+
+local function mittens(specs: { PartSpec }, x: number, y: number, z: number)
+	for _, side in { -1, 1 } do
+		add(specs, {
+			name = "Mitten",
+			size = Vector3.new(0.95, 1.05, 0.95),
+			offset = CFrame.new(side * x, y, z) * CFrame.Angles(0, 0, math.rad(side * -20)),
+			tint = "Crust",
+			mesh = Vector3.one,
+		})
+	end
+end
+
+------------------------------------------------------------------ bodies
 
 local BUILDERS: { [string]: () -> { PartSpec } } = {}
 
 function BUILDERS.Bread(): { PartSpec }
 	local specs: { PartSpec } = {
-		{ name = "Crust", size = Vector3.new(4.6, 4.4, 1), offset = CFrame.new(0, 0.6, 0.1), tint = "Crust" },
-		{ name = "Body", size = Vector3.new(4.1, 4.0, 1), offset = CFrame.new(0, 0.6, -0.05), tint = "Body" },
+		{ name = "Crust", size = Vector3.new(4.6, 4.2, 1.05), offset = CFrame.new(0, 0.5, 0.1), tint = "Crust" },
+		{ name = "Body", size = Vector3.new(4.1, 3.8, 1.0), offset = CFrame.new(0, 0.45, -0.05), tint = "Body" },
 	}
 	for _, side in { -1, 1 } do
-		table.insert(specs, {
+		add(specs, {
 			name = "CrustLobe",
-			size = Vector3.new(1, 3.1, 3.1),
-			offset = CFrame.new(side * 1.05, 2.9, 0.1) * SIDEWAYS,
+			size = Vector3.new(1.05, 3.2, 3.2),
+			offset = CFrame.new(side * 1.05, 2.75, 0.1) * Z_AXIS,
 			shape = Enum.PartType.Cylinder,
 			tint = "Crust",
 		})
-		table.insert(specs, {
+		add(specs, {
 			name = "BodyLobe",
-			size = Vector3.new(1, 2.7, 2.7),
-			offset = CFrame.new(side * 1.05, 2.9, -0.05) * SIDEWAYS,
+			size = Vector3.new(1.0, 2.78, 2.78),
+			offset = CFrame.new(side * 1.05, 2.75, -0.05) * Z_AXIS,
 			shape = Enum.PartType.Cylinder,
 			tint = "Body",
 		})
 	end
-	face(specs, 2.3, 0.8, -0.6, 1.1)
+	-- browned toast spots and the pores of the crumb
+	local spots = {
+		{ -1.45, -0.95, 0.42 },
+		{ 1.5, -1.1, 0.36 },
+		{ -1.55, 1.55, 0.3 },
+		{ 1.65, 2.95, 0.34 },
+		{ -0.6, 3.35, 0.28 },
+		{ 0.9, -0.45, 0.22 },
+	}
+	for _, spot in spots do
+		add(specs, {
+			name = "Spot",
+			size = Vector3.new(0.06, spot[3], spot[3]),
+			offset = CFrame.new(spot[1], spot[2], -0.56) * Z_AXIS,
+			shape = Enum.PartType.Cylinder,
+			tint = "Spot",
+			shadow = false,
+		})
+	end
+	mittens(specs, 2.45, 0.35, -0.1)
+	face(specs, { eyeY = 2.15, eyeX = 0.82, z = -0.6, mouthY = 0.95, scale = 1 })
+	surfaceMarks(specs, 3.8, 3.8, 1.2, -0.6)
 	return specs
 end
 
 function BUILDERS.Bagel(): { PartSpec }
 	local specs: { PartSpec } = {}
-	local ringRadius = 1.75
-	for i = 0, 11 do
-		local angle = (i / 12) * math.pi * 2
-		table.insert(specs, {
+	local ringRadius, center = 1.8, 1.4
+	for i = 0, 15 do
+		local angle = (i / 16) * math.pi * 2
+		add(specs, {
 			name = "Ring",
-			size = Vector3.new(1.9, 1.9, 1.9),
-			offset = CFrame.new(math.cos(angle) * ringRadius, 1.4 + math.sin(angle) * ringRadius, 0),
+			size = Vector3.one * 1.95,
+			offset = CFrame.new(math.cos(angle) * ringRadius, center + math.sin(angle) * ringRadius, 0),
 			shape = Enum.PartType.Ball,
 			tint = if i % 2 == 0 then "Body" else "Crust",
 		})
 	end
-	for i = 0, 5 do
-		local angle = (i / 6) * math.pi * 2 + 0.3
-		table.insert(specs, {
-			name = "Sesame",
-			size = Vector3.new(0.3, 0.15, 0.15),
-			offset = CFrame.new(math.cos(angle) * 1.9, 1.4 + math.sin(angle) * 1.9, -0.95) * CFrame.Angles(0, 0, angle),
-			color = Color3.fromRGB(247, 231, 198),
+	-- inner hole edge, slightly darker
+	for i = 0, 7 do
+		local angle = (i / 8) * math.pi * 2 + 0.2
+		add(specs, {
+			name = "Inner",
+			size = Vector3.one * 0.9,
+			offset = CFrame.new(math.cos(angle) * 1.05, center + math.sin(angle) * 1.05, 0.1),
+			shape = Enum.PartType.Ball,
+			tint = "Spot",
 		})
 	end
-	face(specs, 2.95, 0.75, -0.85, -0.05)
+	for i = 0, 11 do
+		local angle = (i / 12) * math.pi * 2 + 0.3
+		local r = 1.8 + (if i % 2 == 0 then 0.35 else -0.3)
+		add(specs, {
+			name = "Sesame",
+			size = Vector3.new(0.32, 0.16, 0.16),
+			offset = CFrame.new(math.cos(angle) * r, center + math.sin(angle) * r, -0.98) * CFrame.Angles(0, 0, angle),
+			color = Color3.fromRGB(247, 231, 198),
+			shadow = false,
+		})
+	end
+	mittens(specs, 3.1, 0.9, -0.1)
+	face(specs, { eyeY = 3.05, eyeX = 0.78, z = -0.92, mouthY = -0.2, scale = 0.95 })
+	surfaceMarks(specs, 3.6, 3.6, 1.4, -1.0)
 	return specs
 end
 
 function BUILDERS.Croissant(): { PartSpec }
-	local specs: { PartSpec } = {
-		{ name = "Lobe", size = Vector3.new(2.6, 3.2, 2.3), offset = CFrame.new(0, 1.2, 0), tint = "Body", mesh = Vector3.new(1, 1, 1) },
-	}
-	for _, side in { -1, 1 } do
-		table.insert(specs, {
+	local specs: { PartSpec } = {}
+	local arcRadius, center = 2.0, 0.5
+	for i = -3, 3 do
+		local angle = math.rad(90 - i * 26)
+		local s = 1 - math.abs(i) * 0.15
+		add(specs, {
 			name = "Lobe",
-			size = Vector3.new(2, 2.6, 2),
-			offset = CFrame.new(side * 1.6, 0.85, 0.05) * CFrame.Angles(0, 0, math.rad(side * 28)),
-			tint = "Crust",
-			mesh = Vector3.new(1, 1, 1),
+			size = Vector3.new(2.1 * s, 2.9 * s, 2.3 * s),
+			offset = CFrame.new(
+				math.cos(angle) * arcRadius * 1.25,
+				center + math.sin(angle) * arcRadius - (if math.abs(i) == 3 then 0.4 else 0),
+				0
+			) * CFrame.Angles(0, 0, angle - math.rad(90)),
+			tint = if i % 2 == 0 then "Body" else "Crust",
+			mesh = Vector3.one,
 		})
-		table.insert(specs, {
-			name = "Tip",
-			size = Vector3.new(1.4, 2, 1.5),
-			offset = CFrame.new(side * 2.75, 0.1, 0.1) * CFrame.Angles(0, 0, math.rad(side * 50)),
-			tint = "Body",
-			mesh = Vector3.new(1, 1, 1),
-		})
+		-- flaky layer seams
+		if i ~= 0 then
+			add(specs, {
+				name = "Seam",
+				size = Vector3.new(0.18 * s, 2.5 * s, 2.36 * s),
+				offset = CFrame.new(math.cos(angle) * arcRadius * 1.25, center + math.sin(angle) * arcRadius, 0)
+					* CFrame.Angles(0, 0, angle - math.rad(90)),
+				tint = "Spot",
+				mesh = Vector3.one,
+				shadow = false,
+			})
+		end
 	end
-	face(specs, 1.75, 0.55, -1.0, 0.55)
+	face(specs, { eyeY = 2.95, eyeX = 0.55, z = -1.08, mouthY = 1.95, scale = 0.8 })
+	surfaceMarks(specs, 2.0, 2.4, 2.4, -1.1)
 	return specs
 end
 
 function BUILDERS.Waffle(): { PartSpec }
 	local specs: { PartSpec } = {
-		{ name = "Body", size = Vector3.new(4.4, 4.4, 1), offset = CFrame.new(0, 1.1, 0), tint = "Body" },
+		{ name = "Body", size = Vector3.new(4.4, 4.4, 1.0), offset = CFrame.new(0, 1.1, 0), tint = "Body" },
 	}
-	for i = -1, 1 do
-		table.insert(specs, {
-			name = "RidgeV",
-			size = Vector3.new(0.35, 4.2, 0.3),
-			offset = CFrame.new(i * 1.4, 1.1, -0.55),
-			tint = "Crust",
-		})
-		table.insert(specs, {
-			name = "RidgeH",
-			size = Vector3.new(4.2, 0.35, 0.3),
-			offset = CFrame.new(0, 1.1 + i * 1.4, -0.55),
-			tint = "Crust",
+	-- raised crust frame
+	for _, edge in { { 0, 3.2, 4.6, 0.4 }, { 0, -1.0, 4.6, 0.4 }, { -2.2, 1.1, 0.4, 4.6 }, { 2.2, 1.1, 0.4, 4.6 } } do
+		add(specs, { name = "Frame", size = Vector3.new(edge[3], edge[4], 1.15), offset = CFrame.new(edge[1], edge[2], 0), tint = "Crust" })
+	end
+	-- the grid of pockets
+	for row = 0, 2 do
+		for col = 0, 2 do
+			add(specs, {
+				name = "Pocket",
+				size = Vector3.new(1.05, 1.05, 0.12),
+				offset = CFrame.new(-1.35 + col * 1.35, -0.25 + row * 1.35, -0.52),
+				tint = "Spot",
+				shadow = false,
+			})
+		end
+	end
+	-- butter pat and syrup
+	add(specs, {
+		name = "Butter",
+		size = Vector3.new(1.5, 0.4, 1.0),
+		offset = CFrame.new(0.4, 3.55, -0.05) * CFrame.Angles(0, 0.3, 0),
+		color = Theme.Colors.Butter,
+	})
+	for i, drip in { { -1.9, 2.4, 1.2 }, { 1.95, 1.9, 1.8 }, { 2.05, 0.4, 0.9 } } do
+		add(specs, {
+			name = "Syrup",
+			size = Vector3.new(0.34, drip[3], 0.34),
+			offset = CFrame.new(drip[1], drip[2], -0.52 - i * 0.01),
+			color = Color3.fromRGB(150, 70, 20),
+			material = Enum.Material.Glass,
+			transparency = 0.1,
+			mesh = Vector3.one,
 		})
 	end
+	-- the legendary crown
+	add(specs, {
+		name = "CrownBand",
+		size = Vector3.new(2.6, 0.45, 0.8),
+		offset = CFrame.new(0, 3.85, 0.25),
+		color = Theme.Colors.Legend,
+		material = Enum.Material.Metal,
+	})
 	for i = -1, 1 do
-		table.insert(specs, {
+		add(specs, {
 			name = "CrownSpike",
-			size = Vector3.new(0.6, if i == 0 then 1.3 else 0.9, 0.6),
-			offset = CFrame.new(i * 0.9, 3.75 + (if i == 0 then 0.2 else 0), 0) * CFrame.Angles(0, math.rad(45), 0),
+			size = Vector3.new(0.6, if i == 0 then 1.2 else 0.85, 0.6),
+			offset = CFrame.new(i * 0.9, 4.35 + (if i == 0 then 0.18 else 0), 0.25) * CFrame.Angles(0, math.rad(45), 0),
 			color = Theme.Colors.Legend,
 			material = Enum.Material.Neon,
 		})
 	end
-	table.insert(specs, {
-		name = "CrownBand",
-		size = Vector3.new(2.6, 0.45, 0.8),
-		offset = CFrame.new(0, 3.4, 0),
-		color = Theme.Colors.Legend,
-		material = Enum.Material.Metal,
+	add(specs, {
+		name = "Jewel",
+		size = Vector3.one * 0.32,
+		offset = CFrame.new(0, 3.85, -0.17),
+		shape = Enum.PartType.Ball,
+		color = Theme.Colors.Jam,
+		material = Enum.Material.Neon,
 	})
-	face(specs, 1.95, 0.7, -0.75, 0.6)
+	mittens(specs, 2.75, 0.6, -0.1)
+	face(specs, { eyeY = 1.85, eyeX = 0.8, z = -0.66, mouthY = 0.45, scale = 1 })
+	surfaceMarks(specs, 4.0, 4.0, 1.1, -0.66)
 	return specs
 end
+
+------------------------------------------------------------------ cosmetics
 
 local function buildHat(root: BasePart, model: Model, cosmeticId: string, topY: number)
 	local cosmetic = CosmeticDefinitions.ById[cosmeticId]
@@ -484,26 +810,36 @@ local function buildHat(root: BasePart, model: Model, cosmeticId: string, topY: 
 			makePart(root, model, {
 				name = "Hat",
 				size = Vector3.new(0.45, width, width),
-				offset = CFrame.new(0, topY + 0.2 + i * 0.42, 0) * CFrame.Angles(0, 0, math.rad(90)),
+				offset = CFrame.new(0, topY + 0.2 + i * 0.42, 0) * Y_AXIS,
 				shape = Enum.PartType.Cylinder,
 				color = if i % 2 == 0 then color else Theme.Colors.Butter,
 			})
 		end
+		makePart(root, model, {
+			name = "Hat",
+			size = Vector3.one * 0.45,
+			offset = CFrame.new(0, topY + 1.95, 0),
+			shape = Enum.PartType.Ball,
+			color = Theme.Colors.Butter,
+			material = Enum.Material.Neon,
+		})
 	elseif cosmeticId == "ChefHat" then
 		makePart(root, model, {
 			name = "Hat",
 			size = Vector3.new(1, 1.7, 1.7),
-			offset = CFrame.new(0, topY + 0.45, 0) * CFrame.Angles(0, 0, math.rad(90)),
+			offset = CFrame.new(0, topY + 0.45, 0) * Y_AXIS,
 			shape = Enum.PartType.Cylinder,
 			color = color,
 		})
-		makePart(root, model, {
-			name = "Hat",
-			size = Vector3.new(2.4, 1.6, 2.4),
-			offset = CFrame.new(0, topY + 1.3, 0),
-			color = color,
-			mesh = Vector3.new(1, 1, 1),
-		})
+		for _, x in { -0.55, 0, 0.55 } do
+			makePart(root, model, {
+				name = "Hat",
+				size = Vector3.new(1.4, 1.3, 1.6),
+				offset = CFrame.new(x, topY + 1.3 + (if x == 0 then 0.2 else 0), 0),
+				color = color,
+				mesh = Vector3.one,
+			})
+		end
 	elseif cosmeticId == "Crown" then
 		makePart(root, model, {
 			name = "Hat",
@@ -553,6 +889,8 @@ local function buildTrail(root: BasePart, model: Model, cosmeticId: string)
 		a1:Destroy()
 	end)
 end
+
+------------------------------------------------------------------ public API
 
 -- Strip the default avatar look so only the bread (plus tiny arms and legs) shows.
 function BreadVisuals.PrepareCharacter(character: Model)
@@ -616,15 +954,16 @@ function BreadVisuals.Apply(character: Model, breadId: string, cosmetics: { [str
 	end
 
 	-- Butter shield bubble, hidden until needed.
-	makePart(root, model, {
+	local shield = makePart(root, model, {
 		name = "ButterShield",
 		size = Vector3.new(7.5, 7.5, 7.5),
 		offset = CFrame.new(0, 1, 0),
 		shape = Enum.PartType.Ball,
 		color = Theme.Colors.Butter,
 		material = Enum.Material.ForceField,
-	}).Transparency =
-		1
+		shadow = false,
+	})
+	shield.Transparency = 1
 
 	local topY = TOP_Y[breadId] or TOP_Y.Bread
 	if cosmetics then
@@ -638,6 +977,7 @@ function BreadVisuals.Apply(character: Model, breadId: string, cosmetics: { [str
 
 	model.Parent = character
 	BreadVisuals.SetToast(model, 0, "Normal")
+	BreadVisuals.SetExpression(model, "Happy")
 	return model
 end
 
@@ -646,6 +986,24 @@ function BreadVisuals.Get(character: Model?): Model?
 		return nil
 	end
 	return character:FindFirstChild(MODEL_NAME) :: Model?
+end
+
+-- Shows the face parts for `expression` and hides every other variant.
+function BreadVisuals.SetExpression(model: Model, expression: string)
+	if model:GetAttribute("Expression") == expression then
+		return
+	end
+	model:SetAttribute("Expression", expression)
+	local needle = "," .. expression .. ","
+	for _, part in model:GetChildren() do
+		if part:IsA("BasePart") then
+			local tags = part:GetAttribute("Expr")
+			if type(tags) == "string" then
+				local visible = string.find(tags, needle, 1, true) ~= nil
+				part.Transparency = if visible then (part:GetAttribute("BaseTransparency") or 0) else 1
+			end
+		end
+	end
 end
 
 local GOLD = Color3.fromRGB(255, 200, 60)
@@ -663,12 +1021,15 @@ function BreadVisuals.SetToast(model: Model, heat: number, mode: string)
 	local body = Color3.fromRGB(r, g, b)
 	local cr, cg, cb = HeatMath.Darken(r, g, b, 0.35)
 	local crust = Color3.fromRGB(cr, cg, cb)
+	-- toast spots darken faster than the rest of the slice
+	local sr, sg, sb = HeatMath.Darken(r, g, b, 0.28 + heat / 250)
+	local spot = Color3.fromRGB(sr, sg, sb)
 	local material = Enum.Material.SmoothPlastic
 	if mode == "Golden" then
-		body, crust = GOLD, GOLD_CRUST
+		body, crust, spot = GOLD, GOLD_CRUST, GOLD_CRUST
 		material = Enum.Material.Foil
 	elseif mode == "Charcoal" then
-		body, crust = CHARCOAL_BODY, CHARCOAL_CRUST
+		body, crust, spot = CHARCOAL_BODY, CHARCOAL_CRUST, CHARCOAL_CRUST
 		material = Enum.Material.Slate
 	end
 	for _, part in model:GetChildren() do
@@ -680,13 +1041,15 @@ function BreadVisuals.SetToast(model: Model, heat: number, mode: string)
 			elseif tint == "Crust" then
 				part.Color = crust
 				part.Material = material
+			elseif tint == "Spot" then
+				part.Color = spot
 			end
 		end
 	end
 end
 
 local function effectAnchor(model: Model): BasePart?
-	local anchor = model:FindFirstChild("Body") or model:FindFirstChild("Lobe") or model:FindFirstChild("Ring")
+	local anchor = model:FindFirstChild("BreadCore")
 	if anchor and anchor:IsA("BasePart") then
 		return anchor
 	end
@@ -710,6 +1073,7 @@ end
 -- Heat-state particles. Uses legacy Smoke/Fire/Sparkles which need no textures.
 -- state: HeatState value or "Golden".
 function BreadVisuals.SetEffects(model: Model, state: string)
+	BreadVisuals.SetExpression(model, BreadVisuals.ExpressionForState[state] or "Happy")
 	local anchor = effectAnchor(model)
 	if not anchor then
 		return
@@ -757,6 +1121,11 @@ function BreadVisuals.SetEffects(model: Model, state: string)
 		embers.SpreadAngle = Vector2.new(40, 40)
 		embers.Acceleration = Vector3.new(0, 4, 0)
 		tagged(embers, anchor)
+		local glow = Instance.new("PointLight")
+		glow.Color = EMBER
+		glow.Brightness = 1.2
+		glow.Range = 8
+		tagged(glow, anchor)
 	elseif state == "Golden" then
 		local sparkles = Instance.new("Sparkles")
 		sparkles.SparkleColor = Theme.Colors.Legend
@@ -780,7 +1149,7 @@ return BreadVisuals
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="15">
+      <Item class="ModuleScript" referent="16">
         <Properties>
           <string name="Name">Config</string>
           <string name="Source"><![CDATA[--!strict
@@ -873,6 +1242,12 @@ Config.Rewards = {
 	SurvivalXP = 15,
 	LandingXPDivisor = 10,
 	GoldenDuration = 12,
+	-- Surviving rounds in a row boosts round crumbs: +10% per extra round, up to +50%.
+	StreakBonusPerRound = 0.1,
+	StreakMaxSteps = 5,
+	-- End-of-round awards (MOST CRUMBS, BULLSEYE, CHARCOAL MENACE, COOLEST HEAD)
+	AwardCrumbs = 25,
+	BullseyeMinPoints = 50,
 }
 
 Config.Charcoal = {
@@ -985,7 +1360,7 @@ return Config
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="16">
+      <Item class="ModuleScript" referent="17">
         <Properties>
           <string name="Name">Constants</string>
           <string name="Source"><![CDATA[--!strict
@@ -1019,6 +1394,7 @@ return {
 		Level = "Level",
 		XP = "XP",
 		Title = "Title",
+		Streak = "Streak",
 		DataLoaded = "DataLoaded",
 		CooldownPrefix = "CD_", -- CD_Ability, CD_Jam, CD_Nutella (server time)
 	},
@@ -1047,6 +1423,8 @@ return {
 		HandPart = "GiantHandPart",
 		PopPad = "PopPad",
 		Pickup = "Pickup",
+		CoilFX = "CoilFX",
+		PowerLight = "PowerLight",
 	},
 
 	CollisionGroups = {
@@ -1060,7 +1438,7 @@ return {
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="17">
+      <Item class="ModuleScript" referent="18">
         <Properties>
           <string name="Name">CosmeticDefinitions</string>
           <string name="Source"><![CDATA[--!strict
@@ -1100,7 +1478,7 @@ return {
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="18">
+      <Item class="ModuleScript" referent="19">
         <Properties>
           <string name="Name">DataSchema</string>
           <string name="Source"><![CDATA[--!strict
@@ -1122,6 +1500,9 @@ local function defaultStatistics()
 		PlayersBlackened = 0,
 		WaffleUnlocked = 0,
 		VintageQuestDone = 0,
+		SurvivalStreak = 0,
+		BestStreak = 0,
+		AwardsWon = 0,
 	}
 end
 
@@ -1249,7 +1630,7 @@ return DataSchema
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="19">
+      <Item class="ModuleScript" referent="20">
         <Properties>
           <string name="Name">ForkPath</string>
           <string name="Source"><![CDATA[--!strict
@@ -1271,7 +1652,7 @@ return ForkPath
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="20">
+      <Item class="ModuleScript" referent="21">
         <Properties>
           <string name="Name">HeatMath</string>
           <string name="Source"><![CDATA[--!strict
@@ -1393,7 +1774,7 @@ return HeatMath
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="21">
+      <Item class="ModuleScript" referent="22">
         <Properties>
           <string name="Name">LandingMath</string>
           <string name="Source"><![CDATA[--!strict
@@ -1482,7 +1863,7 @@ return LandingMath
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="22">
+      <Item class="ModuleScript" referent="23">
         <Properties>
           <string name="Name">Maid</string>
           <string name="Source"><![CDATA[-- Owns cleanup for connections, instances, threads and callbacks so every
@@ -1543,7 +1924,7 @@ return Maid
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="23">
+      <Item class="ModuleScript" referent="24">
         <Properties>
           <string name="Name">Monetization</string>
           <string name="Source"><![CDATA[--!strict
@@ -1572,7 +1953,7 @@ return {
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="24">
+      <Item class="ModuleScript" referent="25">
         <Properties>
           <string name="Name">Net</string>
           <string name="Source"><![CDATA[-- Typed access to the RemoteEvents declared in default.project.json, plus the
@@ -1593,7 +1974,7 @@ return {
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="25">
+      <Item class="ModuleScript" referent="26">
         <Properties>
           <string name="Name">Progression</string>
           <string name="Source"><![CDATA[--!strict
@@ -1606,6 +1987,8 @@ export type RoundResult = {
 	Survived: boolean,
 	LandingPoints: number,
 	CollectedCrumbs: number,
+	Streak: number?, -- consecutive rounds survived, including this one
+	Awards: number?, -- end-of-round awards won
 }
 
 export type RewardConfig = {
@@ -1615,13 +1998,23 @@ export type RewardConfig = {
 	ParticipationXP: number,
 	SurvivalXP: number,
 	LandingXPDivisor: number,
+	StreakBonusPerRound: number,
+	StreakMaxSteps: number,
+	AwardCrumbs: number,
 }
 
 export type RoundReward = {
 	Points: number,
 	Crumbs: number,
 	XP: number,
+	StreakMultiplier: number,
 }
+
+-- 1.0 for a first survival, +StreakBonusPerRound for every round after it.
+function Progression.StreakMultiplier(streak: number, cfg: RewardConfig): number
+	local steps = math.clamp(streak - 1, 0, cfg.StreakMaxSteps)
+	return 1 + steps * cfg.StreakBonusPerRound
+end
 
 function Progression.LevelForXP(xp: number, thresholds: { number }): number
 	local level = 1
@@ -1649,7 +2042,7 @@ end
 -- counted again here.
 function Progression.RoundReward(result: RoundResult, cfg: RewardConfig): RoundReward
 	if not result.Participated then
-		return { Points = 0, Crumbs = 0, XP = 0 }
+		return { Points = 0, Crumbs = 0, XP = 0, StreakMultiplier = 1 }
 	end
 	local points = result.LandingPoints
 	local crumbs = 0
@@ -1660,7 +2053,9 @@ function Progression.RoundReward(result: RoundResult, cfg: RewardConfig): RoundR
 		xp += cfg.SurvivalXP
 	end
 	crumbs += math.floor(points * cfg.PointsToCrumbs)
-	return { Points = points, Crumbs = crumbs, XP = xp }
+	local multiplier = if result.Survived then Progression.StreakMultiplier(result.Streak or 1, cfg) else 1
+	crumbs = math.floor(crumbs * multiplier) + (result.Awards or 0) * cfg.AwardCrumbs
+	return { Points = points, Crumbs = crumbs, XP = xp, StreakMultiplier = multiplier }
 end
 
 export type UnlockCheck = { Ok: boolean, Reason: string? }
@@ -1682,7 +2077,7 @@ return Progression
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="26">
+      <Item class="ModuleScript" referent="27">
         <Properties>
           <string name="Name">RateLimiter</string>
           <string name="Source"><![CDATA[--!strict
@@ -1732,7 +2127,7 @@ return RateLimiter
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="27">
+      <Item class="ModuleScript" referent="28">
         <Properties>
           <string name="Name">Sounds</string>
           <string name="Source"><![CDATA[-- Sound hooks. Every gameplay moment plays a key from this table, so swapping
@@ -1783,7 +2178,7 @@ return Sounds
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="28">
+      <Item class="ModuleScript" referent="29">
         <Properties>
           <string name="Name">Theme</string>
           <string name="Source"><![CDATA[-- Colours and fonts shared by the map, bread visuals and UI.
@@ -1847,11 +2242,11 @@ return Theme
       </Item>
     </Item>
   </Item>
-  <Item class="ServerScriptService" referent="29">
+  <Item class="ServerScriptService" referent="30">
     <Properties>
       <string name="Name">ServerScriptService</string>
     </Properties>
-    <Item class="Script" referent="30">
+    <Item class="Script" referent="31">
       <Properties>
         <string name="Name">Bootstrap</string>
         <token name="RunContext">0</token>
@@ -1910,11 +2305,11 @@ print("[TOASTER] 🍞 Server ready.")
 ]]></string>
       </Properties>
     </Item>
-    <Item class="Folder" referent="31">
+    <Item class="Folder" referent="32">
       <Properties>
         <string name="Name">Server</string>
       </Properties>
-      <Item class="ModuleScript" referent="32">
+      <Item class="ModuleScript" referent="33">
         <Properties>
           <string name="Name">AbilityManager</string>
           <string name="Source"><![CDATA[-- Validates and resolves every player action request: bread abilities
@@ -2365,7 +2760,7 @@ return AbilityManager
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="33">
+      <Item class="ModuleScript" referent="34">
         <Properties>
           <string name="Name">AchievementManager</string>
           <string name="Source"><![CDATA[-- Unlocks achievements (titles, sometimes a cosmetic) from saved statistics.
@@ -2418,7 +2813,7 @@ return AchievementManager
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="34">
+      <Item class="ModuleScript" referent="35">
         <Properties>
           <string name="Name">CrumbWorldManager</string>
           <string name="Source"><![CDATA[-- CRUMB WORLD: the hidden area beneath the toaster. Players slip through the
@@ -2649,7 +3044,7 @@ return CrumbWorldManager
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="35">
+      <Item class="ModuleScript" referent="36">
         <Properties>
           <string name="Name">CurrencyManager</string>
           <string name="Source"><![CDATA[-- Reusable currency system. Every grant/spend is validated server-side;
@@ -2713,7 +3108,7 @@ return CurrencyManager
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="36">
+      <Item class="ModuleScript" referent="37">
         <Properties>
           <string name="Name">DataManager</string>
           <string name="Source"><![CDATA[-- Persistent player data with safe DataStore patterns:
@@ -2795,6 +3190,7 @@ local function publishAttributes(player: Player, data: any)
 	player:SetAttribute(Constants.Attr.Level, Progression.LevelForXP(data.XP, Config.Progression.LevelXP))
 	player:SetAttribute(Constants.Attr.Bread, data.EquippedBread)
 	player:SetAttribute(Constants.Attr.Title, data.EquippedTitle)
+	player:SetAttribute(Constants.Attr.Streak, data.Statistics.SurvivalStreak)
 end
 
 function DataManager.Init(registry)
@@ -2960,7 +3356,7 @@ return DataManager
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="37">
+      <Item class="ModuleScript" referent="38">
         <Properties>
           <string name="Name">EventManager</string>
           <string name="Source"><![CDATA[-- Heating-phase chaos: random telegraphed events (falling food, hot spots,
@@ -3261,7 +3657,7 @@ return EventManager
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="38">
+      <Item class="ModuleScript" referent="39">
         <Properties>
           <string name="Name">HeatManager</string>
           <string name="Source"><![CDATA[-- Server-authoritative heat. A fixed-interval loop (not per-frame) raises
@@ -3416,6 +3812,7 @@ local function charcoalTouch(sessionList, positions, t: number)
 					if t >= (cooldowns[victim.Player] or 0) then
 						cooldowns[victim.Player] = t + cfg.TouchCooldown
 						victim.BlackenedUntil = t + cfg.BlackenDuration
+						attacker.RoundBlackens += 1
 						services.PlayerManager.RefreshAppearance(victim)
 						HeatManager.AddHeat(victim, cfg.BlackenHeat)
 						services.Messaging.Notify(victim.Player, `🪨 {attacker.Player.DisplayName} blackened you!`, "Danger", 1.8)
@@ -3512,7 +3909,7 @@ return HeatManager
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="39">
+      <Item class="ModuleScript" referent="40">
         <Properties>
           <string name="Name">LaunchManager</string>
           <string name="Source"><![CDATA[-- The POP. A controlled ballistic launch: each player's landing target comes
@@ -3648,6 +4045,7 @@ function LaunchManager.LaunchAll()
 		if root and humanoid and character then
 			-- Survival is decided at the moment of the POP.
 			session.Survived = not session.IsCharcoal
+			session.LaunchHeat = session.Heat
 			if session.Survived then
 				session.Golden = true
 				character:SetAttribute(Constants.CharAttr.Golden, true)
@@ -3739,7 +4137,7 @@ return LaunchManager
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="40">
+      <Item class="ModuleScript" referent="41">
         <Properties>
           <string name="Name">MapBuilder</string>
           <string name="Source"><![CDATA[-- Builds the whole world from primitive parts at server start: the kitchen
@@ -3909,14 +4307,46 @@ local function folder(parent: Instance, name: string): Folder
 	return f
 end
 
+local function lightingEffect(className: string, name: string, props: { [string]: any })
+	local existing = Lighting:FindFirstChild(name)
+	if existing then
+		existing:Destroy()
+	end
+	local effect = Instance.new(className)
+	effect.Name = name
+	for key, value in props do
+		(effect :: any)[key] = value
+	end
+	effect.Parent = Lighting
+end
+
+-- Warm afternoon kitchen light with soft haze, bloom on the glowing coils and
+-- a colour grade ("HeatGrade") the client warms up while the toaster is on.
 local function setupLighting()
-	Lighting.ClockTime = 14
-	Lighting.Brightness = 2.2
-	Lighting.Ambient = Color3.fromRGB(90, 80, 70)
-	Lighting.OutdoorAmbient = Color3.fromRGB(150, 135, 120)
-	Lighting.EnvironmentDiffuseScale = 0.4
-	Lighting.EnvironmentSpecularScale = 0.4
+	Lighting.ClockTime = 15.2
+	Lighting.Brightness = 2.6
+	Lighting.Ambient = Color3.fromRGB(70, 60, 54)
+	Lighting.OutdoorAmbient = Color3.fromRGB(140, 126, 112)
+	Lighting.EnvironmentDiffuseScale = 0.8
+	Lighting.EnvironmentSpecularScale = 0.9
+	Lighting.ExposureCompensation = 0.15
 	Lighting.GlobalShadows = true
+	lightingEffect("Atmosphere", "KitchenAir", {
+		Density = 0.28,
+		Offset = 0.2,
+		Color = Color3.fromRGB(255, 236, 214),
+		Decay = Color3.fromRGB(196, 150, 112),
+		Glare = 0.25,
+		Haze = 1.4,
+	})
+	lightingEffect("BloomEffect", "Bloom", { Intensity = 0.55, Size = 28, Threshold = 1.4 })
+	lightingEffect("ColorCorrectionEffect", "HeatGrade", {
+		Brightness = 0.02,
+		Contrast = 0.08,
+		Saturation = 0.14,
+		TintColor = Color3.fromRGB(255, 248, 240),
+	})
+	lightingEffect("SunRaysEffect", "SunRays", { Intensity = 0.05, Spread = 0.55 })
 end
 
 local function buildKitchen(world: Folder)
@@ -3950,6 +4380,127 @@ local function buildKitchen(world: Folder)
 		Size = Vector3.new(70, 22, 40),
 		CFrame = CFrame.new(-120, 25, 260),
 		Color = C.Butter,
+	})
+
+	-- tile grout on the backsplash
+	for y = 20, 300, 20 do
+		part(world, {
+			Name = "Grout",
+			Size = Vector3.new(1600, 0.8, 1),
+			CFrame = CFrame.new(0, y, -499.6),
+			Color = Color3.fromRGB(196, 188, 172),
+			CanCollide = false,
+			CastShadow = false,
+		})
+	end
+	for x = -780, 780, 40 do
+		part(world, {
+			Name = "Grout",
+			Size = Vector3.new(0.8, 320, 1),
+			CFrame = CFrame.new(x, 160, -499.6),
+			Color = Color3.fromRGB(196, 188, 172),
+			CanCollide = false,
+			CastShadow = false,
+		})
+	end
+
+	-- a sunny window over the landing zone
+	part(world, {
+		Name = "WindowFrame",
+		Size = Vector3.new(260, 170, 4),
+		CFrame = CFrame.new(380, 170, -498),
+		Color = C.Cream,
+	})
+	part(world, {
+		Name = "WindowSky",
+		Size = Vector3.new(236, 146, 4),
+		CFrame = CFrame.new(380, 170, -497),
+		Color = Color3.fromRGB(150, 205, 245),
+		Material = Enum.Material.Neon,
+	})
+	for _, bar in { { 380, 170, 6, 146 }, { 380, 170, 236, 6 } } do
+		part(world, {
+			Name = "WindowBar",
+			Size = Vector3.new(bar[3], bar[4], 6),
+			CFrame = CFrame.new(bar[1], bar[2], -495),
+			Color = C.Cream,
+		})
+	end
+
+	-- upper cabinets
+	for i = 0, 3 do
+		local x = -700 + i * 150
+		part(world, {
+			Name = "Cabinet",
+			Size = Vector3.new(140, 110, 60),
+			CFrame = CFrame.new(x, 330, -470),
+			Color = Color3.fromRGB(122, 158, 146),
+		})
+		part(world, {
+			Name = "CabinetKnob",
+			Size = Vector3.new(4, 4, 4),
+			CFrame = CFrame.new(x + 50, 300, -438),
+			Shape = Enum.PartType.Ball,
+			Color = C.Gold,
+			Material = Enum.Material.Metal,
+		})
+	end
+
+	-- utensil crock with a giant wooden spoon and spatula
+	disc(world, "Crock", Vector3.new(420, 35, -380), 26, 70, Color3.fromRGB(70, 110, 160), Enum.Material.Marble)
+	local spoon = part(world, {
+		Name = "SpoonHandle",
+		Size = Vector3.new(6, 150, 4),
+		CFrame = CFrame.new(410, 110, -385) * CFrame.Angles(0, 0, math.rad(12)),
+		Color = Color3.fromRGB(196, 150, 96),
+		Material = Enum.Material.Wood,
+	})
+	part(world, {
+		Name = "SpoonBowl",
+		Size = Vector3.new(26, 36, 8),
+		CFrame = spoon.CFrame * CFrame.new(0, 88, 0),
+		Color = Color3.fromRGB(196, 150, 96),
+		Material = Enum.Material.Wood,
+		Shape = Enum.PartType.Ball,
+	})
+	part(world, {
+		Name = "Spatula",
+		Size = Vector3.new(5, 140, 3),
+		CFrame = CFrame.new(432, 105, -375) * CFrame.Angles(0, 0, math.rad(-10)),
+		Color = C.Charcoal,
+	})
+
+	-- fruit bowl
+	disc(world, "FruitBowl", Vector3.new(-380, 14, -300), 60, 28, Color3.fromRGB(230, 120, 90), Enum.Material.Marble)
+	for i, apple in { { -400, -310 }, { -365, -290 }, { -385, -275 }, { -360, -320 } } do
+		part(world, {
+			Name = "Apple",
+			Size = Vector3.one * 30,
+			CFrame = CFrame.new(apple[1], 38 + (i % 2) * 6, apple[2]),
+			Shape = Enum.PartType.Ball,
+			Color = if i % 2 == 0 then Color3.fromRGB(210, 40, 40) else Color3.fromRGB(150, 200, 60),
+		})
+	end
+
+	-- salt and pepper
+	disc(world, "Salt", Vector3.new(80, 22, -200), 9, 44, C.Cream)
+	disc(world, "Pepper", Vector3.new(104, 22, -200), 9, 44, C.Charcoal)
+
+	-- butter knife resting by the landing board
+	part(world, {
+		Name = "KnifeBlade",
+		Size = Vector3.new(120, 1.2, 16),
+		CFrame = CFrame.new(330, 0.8, 150) * CFrame.Angles(0, math.rad(8), 0),
+		Color = C.Chrome,
+		Material = Enum.Material.Metal,
+		Reflectance = 0.25,
+	})
+	part(world, {
+		Name = "KnifeHandle",
+		Size = Vector3.new(80, 8, 14),
+		CFrame = CFrame.new(228, 4, 164) * CFrame.Angles(0, math.rad(8), 0),
+		Color = Color3.fromRGB(60, 40, 30),
+		Material = Enum.Material.Wood,
 	})
 end
 
@@ -4109,6 +4660,37 @@ local function buildToaster(folders: { [string]: Folder }): any
 				Group = GROUPS.Toaster,
 			})
 			CollectionService:AddTag(coil, Constants.Tags.Coil)
+			-- heat shimmer + sparks, switched on by clients while the toaster is on
+			local shimmer = Instance.new("ParticleEmitter")
+			shimmer.Name = "HeatShimmer"
+			shimmer.Enabled = false
+			shimmer.Color = ColorSequence.new(Color3.fromRGB(255, 200, 150), Color3.fromRGB(255, 120, 60))
+			shimmer.LightEmission = 0.5
+			shimmer.Transparency = NumberSequence.new(0.8, 1)
+			shimmer.Size = NumberSequence.new(1.5, 4)
+			shimmer.Lifetime = NumberRange.new(1, 1.8)
+			shimmer.Rate = 8
+			shimmer.Speed = NumberRange.new(4, 8)
+			shimmer.SpreadAngle = Vector2.new(15, 15)
+			shimmer.EmissionDirection = Enum.NormalId.Top
+			shimmer.Parent = coil
+			CollectionService:AddTag(shimmer, Constants.Tags.CoilFX)
+			if row % 2 == 1 then
+				local sparks = Instance.new("ParticleEmitter")
+				sparks.Name = "Sparks"
+				sparks.Enabled = false
+				sparks.Color = ColorSequence.new(Color3.fromRGB(255, 230, 120), Color3.fromRGB(255, 120, 30))
+				sparks.LightEmission = 1
+				sparks.Size = NumberSequence.new(0.22, 0)
+				sparks.Lifetime = NumberRange.new(0.35, 0.8)
+				sparks.Rate = 4
+				sparks.Speed = NumberRange.new(10, 22)
+				sparks.SpreadAngle = Vector2.new(70, 70)
+				sparks.Acceleration = Vector3.new(0, -60, 0)
+				sparks.EmissionDirection = if sz > 0 then Enum.NormalId.Front else Enum.NormalId.Back
+				sparks.Parent = coil
+				CollectionService:AddTag(sparks, Constants.Tags.CoilFX)
+			end
 		end
 		for i = -2, 2 do
 			part(toaster, {
@@ -4185,6 +4767,95 @@ local function buildToaster(folders: { [string]: Folder }): any
 	knob:SetAttribute("DownY", knobDownY)
 	local dial = disc(toaster, "Dial", Vector3.new(-leverX, floorY + 22, outerZ + 1), 6, 2, C.Charcoal)
 	dial.CFrame = CFrame.new(-leverX, floorY + 22, outerZ + 1) * Z_AXIS
+	-- browning-level ticks around the dial, and the pointer turned to "6"
+	for i = 0, 5 do
+		local angle = math.rad(-135 + i * 54)
+		part(toaster, {
+			Name = "DialTick",
+			Size = Vector3.new(0.6, 2, 0.4),
+			CFrame = CFrame.new(-leverX + math.sin(angle) * 8, floorY + 22 + math.cos(angle) * 8, outerZ + 0.3)
+				* CFrame.Angles(0, 0, -angle),
+			Color = C.Charcoal,
+			CanCollide = false,
+		})
+	end
+	part(toaster, {
+		Name = "DialPointer",
+		Size = Vector3.new(1.2, 5, 0.6),
+		CFrame = CFrame.new(-leverX, floorY + 22, outerZ + 2.2) * CFrame.Angles(0, 0, math.rad(-135)) * CFrame.new(0, 2.5, 0),
+		Color = C.Cream,
+		CanCollide = false,
+	})
+	local led = part(toaster, {
+		Name = "PowerLight",
+		Size = Vector3.new(2.2, 2.2, 2.2),
+		CFrame = CFrame.new(-leverX + 14, floorY + 22, outerZ + 0.4),
+		Shape = Enum.PartType.Ball,
+		Color = Color3.fromRGB(70, 20, 16),
+		Material = Enum.Material.Neon,
+		CanCollide = false,
+	})
+	CollectionService:AddTag(led, Constants.Tags.PowerLight)
+
+	-- softened chrome corners
+	for _, sx in { -1, 1 } do
+		for _, sz in { -1, 1 } do
+			part(toaster, {
+				Name = "Bevel",
+				Size = Vector3.new(H + floorY - 2, 7, 7),
+				CFrame = CFrame.new(sx * (outerL - 1.5), (topY + 2) / 2 + 1, sz * (outerW - 1.5)) * UP_AXIS,
+				Shape = Enum.PartType.Cylinder,
+				Color = C.Chrome,
+				Material = Enum.Material.Metal,
+				Reflectance = 0.12,
+				Group = GROUPS.Toaster,
+			})
+		end
+	end
+
+	-- crumb tray drawer at the west end (a hint about what's underneath)
+	local tray = part(toaster, {
+		Name = "CrumbTray",
+		Size = Vector3.new(1.2, 5, 50),
+		CFrame = CFrame.new(-(outerL + 0.6), 6, 0),
+		Color = C.ChromeDark,
+		Material = Enum.Material.Metal,
+		Group = GROUPS.Toaster,
+	})
+	label(tray, Enum.NormalId.Left, "CRUMB TRAY", C.Cream)
+	part(toaster, {
+		Name = "TrayHandle",
+		Size = Vector3.new(2.4, 1.6, 14),
+		CFrame = CFrame.new(-(outerL + 2), 6, 0),
+		Color = C.Charcoal,
+		Group = GROUPS.Toaster,
+	})
+
+	-- power cord snaking to the wall
+	local cordPoints = {
+		Vector3.new(-30, 2, -outerW),
+		Vector3.new(-40, 1.2, -outerW - 30),
+		Vector3.new(-20, 1.2, -outerW - 70),
+		Vector3.new(-50, 1.2, -outerW - 120),
+		Vector3.new(-35, 1.2, -outerW - 170),
+		Vector3.new(-45, 1.2, -496),
+	}
+	for i = 1, #cordPoints - 1 do
+		local a, b = cordPoints[i], cordPoints[i + 1]
+		part(toaster, {
+			Name = "Cord",
+			Size = Vector3.new(2.2, 2.2, (b - a).Magnitude + 1.2),
+			CFrame = CFrame.lookAt((a + b) / 2, b),
+			Color = C.Charcoal,
+			CanCollide = false,
+		})
+	end
+	part(toaster, {
+		Name = "WallPlug",
+		Size = Vector3.new(14, 18, 4),
+		CFrame = CFrame.new(-45, 12, -498),
+		Color = C.Cream,
+	})
 	local brand = part(toaster, {
 		Name = "Brand",
 		Size = Vector3.new(50, 10, 0.2),
@@ -4728,7 +5399,7 @@ return MapBuilder
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="41">
+      <Item class="ModuleScript" referent="42">
         <Properties>
           <string name="Name">Messaging</string>
           <string name="Source"><![CDATA[-- Thin server-side wrappers around the remotes so every manager sends UI and
@@ -4792,7 +5463,7 @@ return Messaging
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="42">
+      <Item class="ModuleScript" referent="43">
         <Properties>
           <string name="Name">PickupManager</string>
           <string name="Source"><![CDATA[-- Crumbs and Butter inside the toaster. Pickups are anchored, non-colliding
@@ -5085,7 +5756,7 @@ return PickupManager
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="43">
+      <Item class="ModuleScript" referent="44">
         <Properties>
           <string name="Name">PlayerManager</string>
           <string name="Source"><![CDATA[-- Owns per-player session state, character spawning/respawning, bread
@@ -5136,6 +5807,9 @@ export type Session = {
 	LandingPoints: number,
 	RewardGranted: boolean,
 	Reward: any?,
+	RoundBlackens: number,
+	LaunchHeat: number,
+	Awards: { string },
 	Cooldowns: { [string]: number },
 }
 
@@ -5177,6 +5851,9 @@ local function newSession(player: Player): Session
 		LandingPoints = 0,
 		RewardGranted = false,
 		Reward = nil,
+		RoundBlackens = 0,
+		LaunchHeat = 0,
+		Awards = {},
 		Cooldowns = {},
 	}
 end
@@ -5381,6 +6058,9 @@ function PlayerManager.ResetRoundState(session: Session)
 	session.LandingPoints = 0
 	session.RewardGranted = false
 	session.Reward = nil
+	session.RoundBlackens = 0
+	session.LaunchHeat = 0
+	session.Awards = {}
 	table.clear(session.Cooldowns)
 
 	local player = session.Player
@@ -5590,11 +6270,13 @@ return PlayerManager
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="44">
+      <Item class="ModuleScript" referent="45">
         <Properties>
           <string name="Name">RewardManager</string>
           <string name="Source"><![CDATA[-- End-of-round rewards. Each player is rewarded exactly once per round
 -- (RewardGranted guard) and the results table is built from the same data.
+-- Surviving rounds in a row multiplies crumbs, and four awards go to the
+-- standout players of the round.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -5606,9 +6288,72 @@ local Theme = require(Shared.Theme)
 local RewardManager = {}
 
 local services
+local lastAwards: { { Title: string, Name: string, UserId: number } } = {}
 
 function RewardManager.Init(registry)
 	services = registry
+end
+
+type Award = { Title: string, Pick: (sessions: { any }) -> any? }
+
+local function best(sessions: { any }, score: (any) -> number?, higherIsBetter: boolean): any?
+	local winner, winnerScore = nil, nil
+	for _, session in sessions do
+		local value = score(session)
+		if value ~= nil and (winnerScore == nil or (if higherIsBetter then value > winnerScore else value < winnerScore)) then
+			winner, winnerScore = session, value
+		end
+	end
+	return winner
+end
+
+local AWARDS: { Award } = {
+	{
+		Title = "🍞 MOST CRUMBS",
+		Pick = function(sessions)
+			return best(sessions, function(s)
+				return if s.RoundCrumbs > 0 then s.RoundCrumbs else nil
+			end, true)
+		end,
+	},
+	{
+		Title = "🎯 BULLSEYE",
+		Pick = function(sessions)
+			return best(sessions, function(s)
+				return if s.LandingPoints >= Config.Rewards.BullseyeMinPoints then s.LandingPoints else nil
+			end, true)
+		end,
+	},
+	{
+		Title = "🪨 CHARCOAL MENACE",
+		Pick = function(sessions)
+			return best(sessions, function(s)
+				return if s.RoundBlackens > 0 then s.RoundBlackens else nil
+			end, true)
+		end,
+	},
+	{
+		Title = "🧊 COOLEST HEAD",
+		Pick = function(sessions)
+			return best(sessions, function(s)
+				return if s.Survived then s.LaunchHeat else nil
+			end, false)
+		end,
+	},
+}
+
+local function assignAwards(sessions: { any })
+	table.clear(lastAwards)
+	if #sessions < 2 then
+		return -- awards only mean something with company
+	end
+	for _, award in AWARDS do
+		local winner = award.Pick(sessions)
+		if winner then
+			table.insert(winner.Awards, award.Title)
+			table.insert(lastAwards, { Title = award.Title, Name = winner.Player.DisplayName, UserId = winner.Player.UserId })
+		end
+	end
 end
 
 local function grant(session)
@@ -5617,15 +6362,19 @@ local function grant(session)
 	end
 	session.RewardGranted = true
 	local player = session.Player
+	local data = services.DataManager.Get(player)
+	local streak = if session.Survived and data then data.Statistics.SurvivalStreak + 1 else 0
 	local reward = Progression.RoundReward({
 		Participated = true,
 		Survived = session.Survived,
 		LandingPoints = session.LandingPoints,
 		CollectedCrumbs = session.RoundCrumbs,
+		Streak = streak,
+		Awards = #session.Awards,
 	}, Config.Rewards)
+	reward.Streak = streak
 	session.Reward = reward
 
-	local data = services.DataManager.Get(player)
 	if not data then
 		return
 	end
@@ -5638,6 +6387,9 @@ local function grant(session)
 		d.BreadLevel = Progression.LevelForXP(d.XP, Config.Progression.LevelXP)
 		local stats = d.Statistics
 		stats.RoundsPlayed += 1
+		stats.SurvivalStreak = streak
+		stats.BestStreak = math.max(stats.BestStreak, streak)
+		stats.AwardsWon += #session.Awards
 		if session.Survived then
 			stats.RoundsSurvived += 1
 			if session.UsedButterThisRound then
@@ -5658,6 +6410,13 @@ local function grant(session)
 		)
 	end
 	services.Messaging.Sound(player, "Score")
+	if streak >= 2 then
+		local bonus = math.floor((reward.StreakMultiplier - 1) * 100 + 0.5)
+		services.Messaging.Notify(player, `🔥 SURVIVAL STREAK x{streak}! +{bonus}% crumbs`, "Legend", 3)
+	end
+	for _, title in session.Awards do
+		services.Messaging.Notify(player, `🏅 {title}! +{Config.Rewards.AwardCrumbs} 🍞`, "Good", 3)
+	end
 	if levelAfter > levelBefore then
 		services.Messaging.Notify(player, `⭐ LEVEL UP! You're level {levelAfter}`, "Legend", 3)
 	end
@@ -5665,7 +6424,9 @@ local function grant(session)
 end
 
 function RewardManager.GrantRound()
-	for _, session in services.PlayerManager.InRound() do
+	local sessions = services.PlayerManager.InRound()
+	assignAwards(sessions)
+	for _, session in sessions do
 		local ok, err = pcall(grant, session)
 		if not ok then
 			warn("[RewardManager] reward failed for", session.Player.Name, err)
@@ -5676,7 +6437,7 @@ end
 function RewardManager.BuildResults(): { any }
 	local rows = {}
 	for _, session in services.PlayerManager.InRound() do
-		local reward = session.Reward or { Points = 0, Crumbs = 0, XP = 0 }
+		local reward = session.Reward or { Points = 0, Crumbs = 0, XP = 0, Streak = 0 }
 		table.insert(rows, {
 			UserId = session.Player.UserId,
 			Name = session.Player.DisplayName,
@@ -5687,6 +6448,8 @@ function RewardManager.BuildResults(): { any }
 			Points = reward.Points,
 			Crumbs = reward.Crumbs + session.RoundCrumbs,
 			XP = reward.XP,
+			Streak = reward.Streak or 0,
+			Awards = #session.Awards,
 		})
 	end
 	table.sort(rows, function(a, b)
@@ -5695,11 +6458,15 @@ function RewardManager.BuildResults(): { any }
 	return rows
 end
 
+function RewardManager.LastAwards(): { any }
+	return table.clone(lastAwards)
+end
+
 return RewardManager
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="45">
+      <Item class="ModuleScript" referent="46">
         <Properties>
           <string name="Name">RoundManager</string>
           <string name="Source"><![CDATA[-- Server-authoritative round state machine:
@@ -5852,7 +6619,11 @@ local function runRewardsAndResults()
 	task.wait(ROUND.RewardsDuration)
 
 	setPhase(PHASES.Results, ROUND.ResultsDuration)
-	services.Messaging.Round(nil, "Results", { Round = roundNumber, Rows = services.RewardManager.BuildResults() })
+	services.Messaging.Round(nil, "Results", {
+		Round = roundNumber,
+		Rows = services.RewardManager.BuildResults(),
+		Awards = services.RewardManager.LastAwards(),
+	})
 	task.wait(ROUND.ResultsDuration)
 end
 
@@ -5915,7 +6686,7 @@ return RoundManager
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="46">
+      <Item class="ModuleScript" referent="47">
         <Properties>
           <string name="Name">ShopManager</string>
           <string name="Source"><![CDATA[-- Bread unlocks, cosmetics, titles and Robux purchases. Every request is
@@ -6237,17 +7008,17 @@ return ShopManager
       </Item>
     </Item>
   </Item>
-  <Item class="StarterPlayer" referent="47">
+  <Item class="StarterPlayer" referent="48">
     <Properties>
       <string name="Name">StarterPlayer</string>
       <float name="CameraMaxZoomDistance">140</float>
       <float name="CharacterWalkSpeed">18</float>
     </Properties>
-    <Item class="StarterPlayerScripts" referent="48">
+    <Item class="StarterPlayerScripts" referent="49">
       <Properties>
         <string name="Name">StarterPlayerScripts</string>
       </Properties>
-      <Item class="LocalScript" referent="49">
+      <Item class="LocalScript" referent="50">
         <Properties>
           <string name="Name">ClientController</string>
           <string name="Source"><![CDATA[-- Client entry point: initialises and starts every controller in order.
@@ -6283,11 +7054,11 @@ end
 ]]></string>
         </Properties>
       </Item>
-      <Item class="Folder" referent="50">
+      <Item class="Folder" referent="51">
         <Properties>
           <string name="Name">Controllers</string>
         </Properties>
-        <Item class="ModuleScript" referent="51">
+        <Item class="ModuleScript" referent="52">
           <Properties>
             <string name="Name">CameraController</string>
             <string name="Source"><![CDATA[-- Camera comedy: shakes (via Humanoid.CameraOffset so the default camera keeps
@@ -6400,7 +7171,7 @@ return CameraController
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="52">
+        <Item class="ModuleScript" referent="53">
           <Properties>
             <string name="Name">EffectsController</string>
             <string name="Source"><![CDATA[-- Local visual effects. The server sends small event payloads; every client
@@ -6510,6 +7281,17 @@ local function setCoils(state: string)
 		return
 	end
 	coilState = state
+	local hot = state == "Hot"
+	for _, emitter in CollectionService:GetTagged(Constants.Tags.CoilFX) do
+		(emitter :: ParticleEmitter).Enabled = hot
+	end
+	for _, led in CollectionService:GetTagged(Constants.Tags.PowerLight) do
+		local part = led :: BasePart
+		part.Color = if hot
+			then Color3.fromRGB(255, 50, 30)
+			elseif state == "Warn" then Color3.fromRGB(160, 40, 25)
+			else Color3.fromRGB(70, 20, 16)
+	end
 	for _, coil in CollectionService:GetTagged(Constants.Tags.Coil) do
 		local part = coil :: BasePart
 		if state == "Hot" then
@@ -6523,6 +7305,39 @@ local function setCoils(state: string)
 			tween(part, 1, { Color = C.CoilCold })
 		end
 	end
+end
+
+-- Colour grade: warmer and glowier while the toaster is on, red at critical
+-- heat, washed out when you're charcoal.
+local Lighting = game:GetService("Lighting")
+local gradeKey = ""
+local function refreshGrade()
+	local grade = Lighting:FindFirstChild("HeatGrade") :: ColorCorrectionEffect?
+	local bloom = Lighting:FindFirstChild("Bloom") :: BloomEffect?
+	if not grade or not bloom then
+		return
+	end
+	local heating = Net.RoundState:GetAttribute(RA.HeatActive) == true
+	local state = player:GetAttribute(Constants.Attr.HeatState) or "Normal"
+	local inRound = player:GetAttribute(Constants.Attr.InRound) == true
+	local key = if inRound and state == "Burnt"
+		then "Burnt"
+		elseif heating and inRound and state == "Critical" then "Critical"
+		elseif heating then "Heating"
+		else "Calm"
+	if key == gradeKey then
+		return
+	end
+	gradeKey = key
+	local looks = {
+		Calm = { Tint = Color3.fromRGB(255, 248, 240), Saturation = 0.14, Contrast = 0.08, Bloom = 0.55 },
+		Heating = { Tint = Color3.fromRGB(255, 226, 200), Saturation = 0.22, Contrast = 0.12, Bloom = 0.95 },
+		Critical = { Tint = Color3.fromRGB(255, 186, 166), Saturation = 0.3, Contrast = 0.2, Bloom = 1.2 },
+		Burnt = { Tint = Color3.fromRGB(214, 210, 206), Saturation = -0.55, Contrast = 0.15, Bloom = 0.6 },
+	}
+	local look = looks[key]
+	tween(grade, 0.8, { TintColor = look.Tint, Saturation = look.Saturation, Contrast = look.Contrast })
+	tween(bloom, 0.8, { Intensity = look.Bloom })
 end
 
 local function refreshCoils()
@@ -7312,6 +8127,10 @@ function EffectsController.Start()
 	Net.RoundState:GetAttributeChangedSignal(RA.HeatActive):Connect(refreshCoils)
 	Net.RoundState:GetAttributeChangedSignal(RA.Phase):Connect(refreshCoils)
 	refreshCoils()
+	Net.RoundState:GetAttributeChangedSignal(RA.HeatActive):Connect(refreshGrade)
+	player:GetAttributeChangedSignal(Constants.Attr.HeatState):Connect(refreshGrade)
+	player:GetAttributeChangedSignal(Constants.Attr.InRound):Connect(refreshGrade)
+	refreshGrade()
 
 	for _, other in Players:GetPlayers() do
 		watchPlayer(other)
@@ -7332,7 +8151,7 @@ return EffectsController
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="53">
+        <Item class="ModuleScript" referent="54">
           <Properties>
             <string name="Name">InputController</string>
             <string name="Source"><![CDATA[-- Keyboard / gamepad bindings and the single place action requests are sent
@@ -7427,7 +8246,7 @@ return InputController
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="54">
+        <Item class="ModuleScript" referent="55">
           <Properties>
             <string name="Name">SoundController</string>
             <string name="Source"><![CDATA[-- Plays sound hooks from Shared.Sounds, either 2D or at a world position.
@@ -7492,7 +8311,7 @@ return SoundController
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="55">
+        <Item class="ModuleScript" referent="56">
           <Properties>
             <string name="Name">UIController</string>
             <string name="Source"><![CDATA[-- All in-game UI, built in code: timer, heat meter, butter shield, crumbs,
@@ -7608,6 +8427,17 @@ local function buildTimer()
 		Size = UDim2.fromOffset(460, 24),
 		Font = F.Body,
 		TextColor3 = C.Cream,
+		TextStrokeTransparency = 0.4,
+		Text = "",
+		Parent = gui,
+	})
+	refs.StreakLabel = text({
+		AnchorPoint = Vector2.new(1, 0),
+		Position = UDim2.new(1, -14, 0, 138),
+		Size = UDim2.fromOffset(220, 22),
+		Font = F.Display,
+		TextXAlignment = Enum.TextXAlignment.Right,
+		TextColor3 = C.Orange,
 		TextStrokeTransparency = 0.4,
 		Text = "",
 		Parent = gui,
@@ -7951,9 +8781,17 @@ local function buildResults()
 		Text = "RESULTS",
 		Parent = frame,
 	})
+	refs.ResultsAwards = text({
+		Size = UDim2.new(1, -40, 0, 22),
+		Position = UDim2.fromOffset(20, 58),
+		Font = F.Body,
+		TextColor3 = C.Cream,
+		Text = "",
+		Parent = frame,
+	})
 	refs.ResultsList = create("ScrollingFrame", {
-		Position = UDim2.fromOffset(20, 70),
-		Size = UDim2.new(1, -40, 1, -90),
+		Position = UDim2.fromOffset(20, 88),
+		Size = UDim2.new(1, -40, 1, -104),
 		BackgroundTransparency = 1,
 		BorderSizePixel = 0,
 		ScrollBarThickness = 6,
@@ -8374,6 +9212,11 @@ end
 
 function UIController.ShowResults(payload: any)
 	refs.ResultsTitle.Text = `ROUND {payload.Round} RESULTS`
+	local awardParts = {}
+	for _, award in payload.Awards or {} do
+		table.insert(awardParts, `{award.Title}: {award.Name}`)
+	end
+	refs.ResultsAwards.Text = table.concat(awardParts, "   ·   ")
 	for _, child in refs.ResultsList:GetChildren() do
 		if child:IsA("Frame") then
 			child:Destroy()
@@ -8391,7 +9234,7 @@ function UIController.ShowResults(payload: any)
 		local zoneColor = Theme.ZoneColors[row.ZoneId] or C.Cream
 		local cells = {
 			{ `#{rank}`, 0, 0.08, C.Gold },
-			{ row.Name, 0.08, 0.3, C.Cream },
+			{ if (row.Streak or 0) >= 2 then `{row.Name}  🔥{row.Streak}` else row.Name, 0.08, 0.3, C.Cream },
 			{ if row.Survived then "✨ GOLDEN" else "🪨 BURNT", 0.38, 0.18, if row.Survived then C.Legend else C.CreamMuted },
 			{ row.Zone, 0.56, 0.22, zoneColor },
 			{ `{row.Points} pts`, 0.78, 0.12, C.Cream },
@@ -8443,6 +9286,8 @@ local function refreshCrumbs()
 	local level = player:GetAttribute(ATTR.Level) or 1
 	local title = player:GetAttribute(ATTR.Title) or ""
 	refs.LevelLabel.Text = if title ~= "" then `LVL {level} • {title}` else `LVL {level}`
+	local streak = player:GetAttribute(ATTR.Streak) or 0
+	refs.StreakLabel.Text = if streak >= 2 then `🔥 SURVIVAL STREAK x{streak}` else ""
 end
 
 local function refreshAbilityLabel()
@@ -8572,7 +9417,7 @@ function UIController.Start()
 		player:GetAttributeChangedSignal(name):Connect(refreshHeat)
 	end
 	Net.RoundState:GetAttributeChangedSignal(RA.HeatActive):Connect(refreshHeat)
-	for _, name in { ATTR.Crumbs, ATTR.Level, ATTR.Title } do
+	for _, name in { ATTR.Crumbs, ATTR.Level, ATTR.Title, ATTR.Streak } do
 		player:GetAttributeChangedSignal(name):Connect(refreshCrumbs)
 	end
 	player:GetAttributeChangedSignal(ATTR.Bread):Connect(refreshAbilityLabel)
@@ -8629,7 +9474,7 @@ return UIController
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="56">
+        <Item class="ModuleScript" referent="57">
           <Properties>
             <string name="Name">UIUtil</string>
             <string name="Source"><![CDATA[-- Small helpers for building UI in code.
@@ -8731,7 +9576,7 @@ return UIUtil
       </Item>
     </Item>
   </Item>
-  <Item class="Workspace" referent="57">
+  <Item class="Workspace" referent="58">
     <Properties>
       <string name="Name">Workspace</string>
       <float name="Gravity">196.2</float>

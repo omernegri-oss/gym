@@ -105,6 +105,17 @@ local function setCoils(state: string)
 		return
 	end
 	coilState = state
+	local hot = state == "Hot"
+	for _, emitter in CollectionService:GetTagged(Constants.Tags.CoilFX) do
+		(emitter :: ParticleEmitter).Enabled = hot
+	end
+	for _, led in CollectionService:GetTagged(Constants.Tags.PowerLight) do
+		local part = led :: BasePart
+		part.Color = if hot
+			then Color3.fromRGB(255, 50, 30)
+			elseif state == "Warn" then Color3.fromRGB(160, 40, 25)
+			else Color3.fromRGB(70, 20, 16)
+	end
 	for _, coil in CollectionService:GetTagged(Constants.Tags.Coil) do
 		local part = coil :: BasePart
 		if state == "Hot" then
@@ -118,6 +129,39 @@ local function setCoils(state: string)
 			tween(part, 1, { Color = C.CoilCold })
 		end
 	end
+end
+
+-- Colour grade: warmer and glowier while the toaster is on, red at critical
+-- heat, washed out when you're charcoal.
+local Lighting = game:GetService("Lighting")
+local gradeKey = ""
+local function refreshGrade()
+	local grade = Lighting:FindFirstChild("HeatGrade") :: ColorCorrectionEffect?
+	local bloom = Lighting:FindFirstChild("Bloom") :: BloomEffect?
+	if not grade or not bloom then
+		return
+	end
+	local heating = Net.RoundState:GetAttribute(RA.HeatActive) == true
+	local state = player:GetAttribute(Constants.Attr.HeatState) or "Normal"
+	local inRound = player:GetAttribute(Constants.Attr.InRound) == true
+	local key = if inRound and state == "Burnt"
+		then "Burnt"
+		elseif heating and inRound and state == "Critical" then "Critical"
+		elseif heating then "Heating"
+		else "Calm"
+	if key == gradeKey then
+		return
+	end
+	gradeKey = key
+	local looks = {
+		Calm = { Tint = Color3.fromRGB(255, 248, 240), Saturation = 0.14, Contrast = 0.08, Bloom = 0.55 },
+		Heating = { Tint = Color3.fromRGB(255, 226, 200), Saturation = 0.22, Contrast = 0.12, Bloom = 0.95 },
+		Critical = { Tint = Color3.fromRGB(255, 186, 166), Saturation = 0.3, Contrast = 0.2, Bloom = 1.2 },
+		Burnt = { Tint = Color3.fromRGB(214, 210, 206), Saturation = -0.55, Contrast = 0.15, Bloom = 0.6 },
+	}
+	local look = looks[key]
+	tween(grade, 0.8, { TintColor = look.Tint, Saturation = look.Saturation, Contrast = look.Contrast })
+	tween(bloom, 0.8, { Intensity = look.Bloom })
 end
 
 local function refreshCoils()
@@ -907,6 +951,10 @@ function EffectsController.Start()
 	Net.RoundState:GetAttributeChangedSignal(RA.HeatActive):Connect(refreshCoils)
 	Net.RoundState:GetAttributeChangedSignal(RA.Phase):Connect(refreshCoils)
 	refreshCoils()
+	Net.RoundState:GetAttributeChangedSignal(RA.HeatActive):Connect(refreshGrade)
+	player:GetAttributeChangedSignal(Constants.Attr.HeatState):Connect(refreshGrade)
+	player:GetAttributeChangedSignal(Constants.Attr.InRound):Connect(refreshGrade)
+	refreshGrade()
 
 	for _, other in Players:GetPlayers() do
 		watchPlayer(other)

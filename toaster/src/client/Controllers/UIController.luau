@@ -115,6 +115,17 @@ local function buildTimer()
 		Text = "",
 		Parent = gui,
 	})
+	refs.StreakLabel = text({
+		AnchorPoint = Vector2.new(1, 0),
+		Position = UDim2.new(1, -14, 0, 138),
+		Size = UDim2.fromOffset(220, 22),
+		Font = F.Display,
+		TextXAlignment = Enum.TextXAlignment.Right,
+		TextColor3 = C.Orange,
+		TextStrokeTransparency = 0.4,
+		Text = "",
+		Parent = gui,
+	})
 end
 
 local function buildCrumbs()
@@ -454,9 +465,17 @@ local function buildResults()
 		Text = "RESULTS",
 		Parent = frame,
 	})
+	refs.ResultsAwards = text({
+		Size = UDim2.new(1, -40, 0, 22),
+		Position = UDim2.fromOffset(20, 58),
+		Font = F.Body,
+		TextColor3 = C.Cream,
+		Text = "",
+		Parent = frame,
+	})
 	refs.ResultsList = create("ScrollingFrame", {
-		Position = UDim2.fromOffset(20, 70),
-		Size = UDim2.new(1, -40, 1, -90),
+		Position = UDim2.fromOffset(20, 88),
+		Size = UDim2.new(1, -40, 1, -104),
 		BackgroundTransparency = 1,
 		BorderSizePixel = 0,
 		ScrollBarThickness = 6,
@@ -877,6 +896,11 @@ end
 
 function UIController.ShowResults(payload: any)
 	refs.ResultsTitle.Text = `ROUND {payload.Round} RESULTS`
+	local awardParts = {}
+	for _, award in payload.Awards or {} do
+		table.insert(awardParts, `{award.Title}: {award.Name}`)
+	end
+	refs.ResultsAwards.Text = table.concat(awardParts, "   ·   ")
 	for _, child in refs.ResultsList:GetChildren() do
 		if child:IsA("Frame") then
 			child:Destroy()
@@ -894,7 +918,7 @@ function UIController.ShowResults(payload: any)
 		local zoneColor = Theme.ZoneColors[row.ZoneId] or C.Cream
 		local cells = {
 			{ `#{rank}`, 0, 0.08, C.Gold },
-			{ row.Name, 0.08, 0.3, C.Cream },
+			{ if (row.Streak or 0) >= 2 then `{row.Name}  🔥{row.Streak}` else row.Name, 0.08, 0.3, C.Cream },
 			{ if row.Survived then "✨ GOLDEN" else "🪨 BURNT", 0.38, 0.18, if row.Survived then C.Legend else C.CreamMuted },
 			{ row.Zone, 0.56, 0.22, zoneColor },
 			{ `{row.Points} pts`, 0.78, 0.12, C.Cream },
@@ -946,6 +970,8 @@ local function refreshCrumbs()
 	local level = player:GetAttribute(ATTR.Level) or 1
 	local title = player:GetAttribute(ATTR.Title) or ""
 	refs.LevelLabel.Text = if title ~= "" then `LVL {level} • {title}` else `LVL {level}`
+	local streak = player:GetAttribute(ATTR.Streak) or 0
+	refs.StreakLabel.Text = if streak >= 2 then `🔥 SURVIVAL STREAK x{streak}` else ""
 end
 
 local function refreshAbilityLabel()
@@ -1075,7 +1101,7 @@ function UIController.Start()
 		player:GetAttributeChangedSignal(name):Connect(refreshHeat)
 	end
 	Net.RoundState:GetAttributeChangedSignal(RA.HeatActive):Connect(refreshHeat)
-	for _, name in { ATTR.Crumbs, ATTR.Level, ATTR.Title } do
+	for _, name in { ATTR.Crumbs, ATTR.Level, ATTR.Title, ATTR.Streak } do
 		player:GetAttributeChangedSignal(name):Connect(refreshCrumbs)
 	end
 	player:GetAttributeChangedSignal(ATTR.Bread):Connect(refreshAbilityLabel)

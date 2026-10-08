@@ -150,6 +150,7 @@ local function charcoalTouch(sessionList, positions, t: number)
 					if t >= (cooldowns[victim.Player] or 0) then
 						cooldowns[victim.Player] = t + cfg.TouchCooldown
 						victim.BlackenedUntil = t + cfg.BlackenDuration
+						attacker.RoundBlackens += 1
 						services.PlayerManager.RefreshAppearance(victim)
 						HeatManager.AddHeat(victim, cfg.BlackenHeat)
 						services.Messaging.Notify(victim.Player, `🪨 {attacker.Player.DisplayName} blackened you!`, "Danger", 1.8)
