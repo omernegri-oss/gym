@@ -1,0 +1,70 @@
+{
+  "name": "Toaster",
+  "tree": {
+    "$className": "DataModel",
+
+    "ReplicatedStorage": {
+      "Shared": {
+        "$path": "src/shared"
+      },
+      "Remotes": {
+        "$className": "Folder",
+        "RoundEvent": { "$className": "RemoteEvent" },
+        "UIEvent": { "$className": "RemoteEvent" },
+        "AbilityEvent": { "$className": "RemoteEvent" },
+        "InteractionEvent": { "$className": "RemoteEvent" },
+        "EffectEvent": { "$className": "RemoteEvent" }
+      },
+      "RoundState": {
+        "$className": "Folder"
+      },
+      "Assets": {
+        "$className": "Folder"
+      }
+    },
+
+    "ServerScriptService": {
+      "Server": {
+        "$path": "src/server"
+      },
+      "Bootstrap": {
+        "$path": "src/Bootstrap.server.luau"
+      }
+    },
+
+    "StarterPlayer": {
+      "$properties": {
+        "CameraMaxZoomDistance": 140,
+        "CharacterWalkSpeed": 18
+      },
+      "StarterPlayerScripts": {
+        "ClientController": {
+          "$path": "src/client/ClientController.client.luau"
+        },
+        "Controllers": {
+          "$path": "src/client/Controllers"
+        }
+      }
+    },
+
+    "Lighting": {
+      "$properties": {
+        "Technology": "Future",
+        "ShadowSoftness": 0.25
+      }
+    },
+
+    "Players": {
+      "$properties": {
+        "CharacterAutoLoads": false
+      }
+    },
+
+    "Workspace": {
+      "$properties": {
+        "Gravity": 196.2,
+        "StreamingEnabled": false
+      }
+    }
+  }
+}
