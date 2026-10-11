@@ -1,0 +1,4 @@
+sourcemap.json
+tests/harness/generated/Sources.luau
+*.rbxl.lock
+*.rbxlx.lock

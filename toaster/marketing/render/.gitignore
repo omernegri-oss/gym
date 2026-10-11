@@ -1,0 +1,5 @@
+node_modules/
+thumb.json
+thumb-scene.js
+*.png
+package-lock.json

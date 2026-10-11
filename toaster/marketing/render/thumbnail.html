@@ -1,0 +1,212 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+@font-face { font-family: "Lilita"; src: url("node_modules/@fontsource/lilita-one/files/lilita-one-latin-400-normal.woff2") format("woff2"); }
+@font-face { font-family: "Fredoka"; font-weight: 700; src: url("node_modules/@fontsource/fredoka/files/fredoka-latin-700-normal.woff2") format("woff2"); }
+html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; background: #1c1714; }
+#c { position: absolute; inset: 0; width: 100%; height: 100%; }
+#fx { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.title-wrap { position: absolute; left: 4.2%; top: 5%; transform: rotate(-5deg); transform-origin: left top; }
+.title {
+  font-family: "Lilita", sans-serif; font-size: 13.5vw; line-height: 0.9; letter-spacing: 0.01em; margin: 0;
+  background: linear-gradient(180deg, #fff4b0 0%, #ffd23f 38%, #ff8a1a 72%, #e84a12 100%);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  -webkit-text-stroke: 0.55vw #3a1606; paint-order: stroke fill;
+  filter: drop-shadow(0 0.7vw 0 #3a1606) drop-shadow(0 1.4vw 1.2vw rgba(0,0,0,0.45));
+}
+.tag {
+  display: inline-block; margin: 1.1vw 0 0 0.6vw; padding: 0.5vw 1.6vw 0.6vw;
+  font-family: "Fredoka", sans-serif; font-weight: 700; font-size: 3.4vw; color: #fff;
+  background: #e8321e; border: 0.32vw solid #3a1606; border-radius: 1.2vw;
+  transform: rotate(2deg); box-shadow: 0 0.5vw 0 #3a1606;
+  -webkit-text-stroke: 0.18vw #3a1606; paint-order: stroke fill;
+}
+body.icon .title-wrap { left: 50%; top: auto; bottom: 4%; transform: translateX(-50%) rotate(-4deg); transform-origin: center; }
+body.icon .title { font-size: 21vw; -webkit-text-stroke: 1.2vw #3a1606; filter: drop-shadow(0 1.4vw 0 #3a1606); }
+body.icon .tag { display: none; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<canvas id="fx"></canvas>
+<div class="title-wrap"><h1 class="title">TOASTER</h1><div class="tag">DON'T GET BURNT!</div></div>
+<script src="thumb-scene.js"></script>
+<script src="node_modules/three/build/three.min.js"></script>
+<script src="node_modules/three/examples/js/shaders/CopyShader.js"></script>
+<script src="node_modules/three/examples/js/shaders/LuminosityHighPassShader.js"></script>
+<script src="node_modules/three/examples/js/postprocessing/EffectComposer.js"></script>
+<script src="node_modules/three/examples/js/postprocessing/RenderPass.js"></script>
+<script src="node_modules/three/examples/js/postprocessing/ShaderPass.js"></script>
+<script src="node_modules/three/examples/js/postprocessing/UnrealBloomPass.js"></script>
+<script>
+(async function () {
+  const params = new URLSearchParams(location.search);
+  const mode = params.get('mode') || 'thumb';
+  if (mode === 'icon') document.body.classList.add('icon');
+  const data = window.SCENE;
+  const W = window.innerWidth, H = window.innerHeight;
+
+  const canvas = document.getElementById('c');
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+  renderer.setPixelRatio(1);
+  renderer.setSize(W, H, false);
+  renderer.outputEncoding = THREE.sRGBEncoding;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 0.82;
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+  const scene = new THREE.Scene();
+  // Heat-wave backdrop: deep red at the top melting into hot orange.
+  const bg = document.createElement('canvas');
+  bg.width = 16; bg.height = 512;
+  const g = bg.getContext('2d');
+  const grad = g.createLinearGradient(0, 0, 0, 512);
+  grad.addColorStop(0, '#5a0f12');
+  grad.addColorStop(0.45, '#c2361a');
+  grad.addColorStop(0.8, '#ff8a2a');
+  grad.addColorStop(1, '#ffc65c');
+  g.fillStyle = grad; g.fillRect(0, 0, 16, 512);
+  const bgTex = new THREE.CanvasTexture(bg);
+  bgTex.encoding = THREE.sRGBEncoding;
+  scene.background = bgTex;
+  scene.fog = new THREE.Fog('#d0542a', 380, 1100);
+
+  const camThumb = new THREE.Vector3(-62, 122, 72);
+  const camera = new THREE.PerspectiveCamera(mode === 'icon' ? 42 : 50, W / H, 0.3, 3000);
+  if (mode === 'icon') {
+    const tom = new THREE.Vector3(-6, 103.5, 30);
+    const dir = camThumb.clone().sub(tom).normalize();
+    camera.position.copy(tom).addScaledVector(dir, 25).add(new THREE.Vector3(0, 1.5, 0));
+    camera.lookAt(tom.clone().add(new THREE.Vector3(0, -2.2, 0)));
+  } else {
+    camera.position.copy(camThumb);
+    camera.lookAt(new THREE.Vector3(12, 106, 10));
+  }
+
+  // Lights: warm key, cool rim, and the furnace glow from the slot below.
+  scene.add(new THREE.HemisphereLight(0xfff0dc, 0x5a3a22, 0.6));
+  const key = new THREE.DirectionalLight(0xfff1dc, 1.0);
+  key.position.set(-120, 260, 160);
+  key.castShadow = true;
+  key.shadow.mapSize.set(2048, 2048);
+  Object.assign(key.shadow.camera, { left: -120, right: 120, top: 140, bottom: -60, near: 10, far: 700 });
+  key.target.position.set(0, 90, 10);
+  scene.add(key, key.target);
+  const rim = new THREE.DirectionalLight(0x9fd0ff, 0.55);
+  rim.position.set(160, 140, -120);
+  scene.add(rim);
+  const furnace = new THREE.PointLight(0xff3a10, 4, 70, 1.2);
+  furnace.position.set(0, 30, 0);
+  scene.add(furnace);
+  for (const p of [[-20, 70, 10], [20, 74, 25], [0, 60, -10]]) {
+    const glow = new THREE.PointLight(0xff5a14, 2.6, 110, 1.4);
+    glow.position.set(...p);
+    scene.add(glow);
+  }
+
+  // ---- parts (same conventions as the preview page)
+  const geo = {};
+  function wedge() {
+    const g = new THREE.BufferGeometry();
+    const L = -0.5, R = 0.5, A = [-0.5, -0.5], B = [-0.5, 0.5], C = [0.5, 0.5];
+    const v = (x, p) => [x, p[0], p[1]];
+    const tris = [[v(L,A),v(L,C),v(L,B)],[v(R,A),v(R,B),v(R,C)],[v(L,A),v(L,B),v(R,B)],[v(L,A),v(R,B),v(R,A)],[v(L,B),v(L,C),v(R,C)],[v(L,B),v(R,C),v(R,B)],[v(L,A),v(R,A),v(R,C)],[v(L,A),v(R,C),v(L,C)]];
+    const pos = []; tris.forEach(t => t.forEach(p => pos.push(...p)));
+    g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.computeVertexNormals(); return g;
+  }
+  function geometry(shape, ell) {
+    const k = ell ? 'ell' : shape;
+    if (geo[k]) return geo[k];
+    let g;
+    if (ell || shape === 'Ball') g = new THREE.SphereGeometry(0.5, 40, 28);
+    else if (shape === 'Cylinder') { g = new THREE.CylinderGeometry(0.5, 0.5, 1, 48); g.rotateZ(Math.PI / 2); }
+    else if (shape === 'Wedge') g = wedge();
+    else g = new THREE.BoxGeometry(1, 1, 1);
+    return (geo[k] = g);
+  }
+  const mats = {};
+  function material(c, m, t) {
+    const k = c.join(',') + m + t;
+    if (mats[k]) return mats[k];
+    const color = new THREE.Color().setRGB(c[0] / 255, c[1] / 255, c[2] / 255).convertSRGBToLinear();
+    const o = { color, roughness: 0.62, metalness: 0 };
+    if (m === 'Neon') { o.emissive = color; o.emissiveIntensity = 1.35; }
+    if (m === 'Metal') { o.metalness = 0.75; o.roughness = 0.28; }
+    if (m === 'Foil') { o.metalness = 0.9; o.roughness = 0.22; }
+    if (m === 'Glass') { o.transparent = true; o.opacity = 0.45; o.roughness = 0.05; }
+    if (m === 'ForceField') { o.transparent = true; o.opacity = 0.1; o.emissive = color; }
+    if (m === 'Slate') { o.roughness = 0.95; }
+    if (m === 'SmoothPlastic') { o.roughness = 0.45; }
+    if (t > 0 && t < 1) { o.transparent = true; o.opacity = Math.min(o.opacity || 1, 1 - t); }
+    const mat = new THREE.MeshStandardMaterial(o);
+    if (o.transparent) mat.depthWrite = false;
+    return (mats[k] = mat);
+  }
+  data.parts.forEach(p => {
+    if (p.t >= 1) return;
+    let [sx, sy, sz] = p.s;
+    if (p.h === 'Ball' && !p.e) { const d = Math.min(sx, sy, sz); sx = sy = sz = d; }
+    if (p.h === 'Cylinder' && !p.e) { const d = Math.min(sy, sz); sy = sz = d; }
+    const r = p.r;
+    const m4 = new THREE.Matrix4().set(r[0], r[1], r[2], p.p[0], r[3], r[4], r[5], p.p[1], r[6], r[7], r[8], p.p[2], 0, 0, 0, 1);
+    const mesh = new THREE.Mesh(geometry(p.h, p.e), material(p.c, p.m, p.t));
+    mesh.matrixAutoUpdate = false;
+    mesh.matrix.copy(m4).multiply(new THREE.Matrix4().makeScale(sx, sy, sz));
+    mesh.castShadow = p.p[1] > -100 && Math.max(sx, sy, sz) < 900 && p.m !== 'Glass';
+    mesh.receiveShadow = p.p[1] > -100;
+    scene.add(mesh);
+  });
+
+  // ---- embers rising out of the slot
+  const emberCount = 260;
+  const pos = new Float32Array(emberCount * 3);
+  for (let i = 0; i < emberCount; i++) {
+    pos[i * 3] = -70 + Math.random() * 140;
+    pos[i * 3 + 1] = 80 + Math.random() * 80;
+    pos[i * 3 + 2] = -35 + Math.random() * 70;
+  }
+  const embersGeo = new THREE.BufferGeometry();
+  embersGeo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  scene.add(new THREE.Points(embersGeo, new THREE.PointsMaterial({ color: 0xffa040, size: 0.9, transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending, depthWrite: false })));
+
+  // ---- bloom
+  const composer = new THREE.EffectComposer(renderer);
+  composer.setSize(W, H);
+  composer.addPass(new THREE.RenderPass(scene, camera));
+  composer.addPass(new THREE.UnrealBloomPass(new THREE.Vector2(W, H), mode === 'icon' ? 0.45 : 0.6, 0.5, 0.88));
+  composer.render();
+
+  // ---- cartoon pop lines + heat burst behind the breads (2D, projected)
+  const fx = document.getElementById('fx');
+  fx.width = W; fx.height = H;
+  const ctx = fx.getContext('2d');
+  const heads = data.labels.filter(l => l.small).map(l => new THREE.Vector3(l.p[0], l.p[1] - 7, l.p[2]));
+  if (mode !== 'icon') {
+    heads.forEach((hp, i) => {
+      const s = hp.clone().project(camera);
+      const x = (s.x + 1) / 2 * W, y = (1 - s.y) / 2 * H;
+      const dist = camera.position.distanceTo(hp);
+      const scale = 2.6 * 900 / dist;
+      ctx.save();
+      ctx.lineCap = 'round';
+      for (let k = -2; k <= 2; k++) {
+        const ox = x + k * scale * 0.55;
+        const len = scale * (1.5 + (k % 2 === 0 ? 0.6 : 0));
+        ctx.strokeStyle = 'rgba(255,255,255,0.85)';
+        ctx.lineWidth = Math.max(3, scale * 0.09);
+        ctx.beginPath();
+        ctx.moveTo(ox, y + scale * 2.2);
+        ctx.lineTo(ox, y + scale * 2.2 + len);
+        ctx.stroke();
+      }
+      ctx.restore();
+    });
+  }
+  document.body.dataset.ready = '1';
+})();
+</script>
+</body>
+</html>
